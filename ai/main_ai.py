@@ -9,10 +9,37 @@ from google.generativeai.types import GenerationConfig
 from langchain_community.vectorstores import FAISS
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
-
+import pyttsx3
 from core.config import settings
 
 genai.configure(api_key=settings.GOOGLE_API_KEY)
+
+
+
+def get_tts(text, gender='female'):
+    # ONLY SUPPORTS ENGLISH LANGUAGE
+    engine = pyttsx3.init()
+    voices = engine.getProperty('voices')
+
+    # Select voice based on gender
+    if gender.lower() == 'male':
+        # Select male voice
+        engine.setProperty('voice', voices[0].id)  
+    elif gender.lower() == 'female':
+        # Select female voice
+        engine.setProperty('voice', voices[1].id)  
+    
+    # Set properties
+    # rate = engine.getProperty('rate')
+    # print(rate)
+    engine.setProperty('rate', 180)  
+    engine.setProperty('volume', 1.0)   
+    
+    # Convert text to speech
+    # engine.say("Hello my friend!")
+    engine.save_to_file(text, 'output_tts.mp3')
+    engine.runAndWait()
+
 
 
 def get_text_from_pdf(docs):
