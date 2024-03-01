@@ -10,8 +10,6 @@ from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
 # from ..core.config import settings
 
-G_API_KEY = "AIzaSyCjt1QbypLJhU4Z6G5akuzB5pwwvoWJ8Fg"
-
 genai.configure(api_key=G_API_KEY)
 
 def get_text_from_pdf(docs):
