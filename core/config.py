@@ -14,11 +14,14 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = env_values["JWT_ALGORITHM"]
     JWT_PRIVATE_KEY: str = env_values["JWT_PRIVATE_KEY"]
     GOOGLE_API_KEY: str = env_values["GOOGLE_API_KEY"]
+    GEMINI_API_KEY: str = env_values["GEMINI_API_KEY"]
 
     class Config:
         case_sensitive = True
 
 
 settings = Settings()
+
+
 print("FROM ENV")
-print(settings.GOOGLE_API_KEY)
+print(settings.GEMINI_API_KEY)
