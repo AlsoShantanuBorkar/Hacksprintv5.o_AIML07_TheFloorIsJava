@@ -5,6 +5,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 import os
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 import google.generativeai as genai
+from google.generativeai.types import GenerationConfig
 from langchain_community.vectorstores import FAISS
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
@@ -71,21 +72,19 @@ def gateway(uq):
 
 def get_conversational_chain():
     prompt_template = """
-    You are a helpful and resourceful bot and your job is to understand the user's question \
-    properly and then respond with a solution that is in accordance to the laws as stated \
-    in the given corpus or knowledge base. Your response MUST be structured this way - First \
-    state the corresponding law from the corpus, and then frame the appropriate response \
-    that aims to solve the user's problem. Most importantly, your aim is to convey your \
-    solution in an easy to understand manner, and to-the-point. You are a friendly lawful \
-    bot that utilizes indian consumer laws to craft appropriate solutions catering to the \
-    user's specific problem.
+    Given to you is a corpus and a question. Your job is understand the user's question, and figure out what Indian Law applies to their situation. Usually, this can be found in the given corpus, and you can use it to provide an accurate helpful response that aims to solve the user's problem. However, sometimes the Corpus does not contain relevant context. In such cases, use your own knowledge base to solve the user's problem by providing the precise relevant Indian law and its section(s). 
+
+    Your output must consist of these components :
+
+    Situation of the user problem (summarised), Exact Law (with section name and number), Description (content of that specific law that immediately follows after the section name)
 
     Corpus:\n{context}\n
     Question: \n{question}\n
 
     Answer:
     """
-    model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.3, google_api_key=G_API_KEY)
+    model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.1, google_api_key=G_API_KEY)
+    # model = genai.GenerativeModel("gemini-pro", generation_config=GenerationConfig(temperature=0.1))
     prompt = PromptTemplate(template=prompt_template,
                             input_variables=["context", "question"])
     # model = genai.GenerativeModel("gemini-pro")
@@ -97,10 +96,30 @@ def extract_info(query, category):
     new_db = FAISS.load_local(f"ai/vectorstore/{category}", embeddings)
     docs = new_db.similarity_search(query)
     chain = get_conversational_chain()
-    response = chain(
-        {"input_documents":docs, "question":query},
-        return_only_outputs=True
-    )
+    try:
+        response = chain(
+            {"input_documents":docs, "question":query},
+            return_only_outputs=True
+        )
+    except Exception as e:
+        faux_rag_prompt = """
+        You have a vast and dense knowledge about Laws of various domains in India, especially these four domains :
+
+        1. criminal law
+        2. family law
+        3. labour law
+        4. property law
+
+        Given the user's query and their domain, your main mission is to understand their issue, and think about what indian laws are relevant to their scenario. Provide them with these three components, as your final output :
+
+        Situation of the user problem (summarised), Exact Law (with section name and number), Description (content of that specific law that immediately follows after the section name)
+    
+        Here is the user's query :
+        """
+        rag_model = genai.GenerativeModel("gemini-pro", generation_config=GenerationConfig(temperature=0.1))
+        ragres = rag_model.generate_content(f"{faux_rag_prompt}\n{query}\nHere's the Domain:\n{category}").text
+
+        response = {"output_text":ragres}
     response_from_rag = response["output_text"]
     print(response_from_rag)
     # return response_from_rag
@@ -108,12 +127,16 @@ def extract_info(query, category):
     refining_prompt = """
     You're the best lawyer in the India. Your number 1 priority is to help, serve and cater to your client's needs in the best way possible. REMEMBER that the client may not be aware of all the legal jargon, and it is your job to be verbose and clarify it all in an easy to understand manner. You will be provided some context from the current laws along with the client's query. Your mission is to return aappropriate response for their query. Remember, be verbose and friendly about it.
 
+    What you will be provided :
+
+    Situation, Exact Law, Description
+
     This is how your thought process must be :
 
-    Step 1) State the exact law from the context.
-    Step 2) Then explain what it means.
-    Step 3) Elaborate how it applies to the client's situation.
-    Step 4) Inform what the actions the client needs to take now.
+    1. Relevant Law (State the exact law from the context.)
+    2. Explanation (Then explain what it means.)
+    3. Application (Elaborate how it applies to the client's situation.)
+    4. Actions (Inform what the actions the client needs to take now, in detail, step by step)
 
     Don't display output as if you're a bot. Remember, you're a lawyer so structure your responses in a way a lawyer would speak.
 
@@ -121,7 +144,7 @@ def extract_info(query, category):
 
     THIS IS HOW YOUR RESPONSE MUST BE, ALWAYS, AT ALL TIMES, AT ANY COST :
 
-    {"message":"","domain":"","laws":{"section":""}}
+    {"message":"apply the 4-step thought process here","domain":"","laws":{"section":"","name":"section heading or name", "description":"exact provided Description"}}
 
     USER_QUERY : 
     """
@@ -130,7 +153,9 @@ def extract_info(query, category):
 
 def get_advice(uq):
     category = gateway(uq)
+    print(category)
     extracted_info = extract_info(uq, category)
+    # print(extracted_info)
     try:
         json_extracted_info = json.loads(extracted_info)
         return json_extracted_info
@@ -147,10 +172,11 @@ def get_advice(uq):
         """
         fix_model = genai.GenerativeModel("gemini-pro")
         rex = fix_model.generate_content(f"{fixer_prompt}\n{extracted_info}\nHere is the error:\n{e}").text
-        return rex
+        json_rex = json.loads(rex)
+        return json_rex
 
 que = """
-What are the legal requirements for a workplace to be considered safe?
+What are my rights if my landlord wants to demolish the building I'm living in?
 """
 answer = get_advice(que)
 print(answer)
