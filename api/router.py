@@ -16,6 +16,13 @@ globalImage: Image = None
 imageText: str = None
 
 
+@router.get("/reset_server")
+def reset_server():
+    global globalImage, imageText
+    globalImage = None
+    imageText = None
+
+
 @router.get("/")
 async def home():
     return {"message": imageText == None}

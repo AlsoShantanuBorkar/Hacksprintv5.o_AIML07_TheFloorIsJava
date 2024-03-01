@@ -10,9 +10,9 @@ from langchain_community.vectorstores import FAISS
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
 
-# from ..core.config import settings
+from core.config import settings
 
-genai.configure(api_key=G_API_KEY)
+genai.configure(api_key=settings.GOOGLE_API_KEY)
 
 
 def get_text_from_pdf(docs):
@@ -89,7 +89,7 @@ def get_conversational_chain():
     Answer:
     """
     model = ChatGoogleGenerativeAI(
-        model="gemini-pro", temperature=0.1, google_api_key=G_API_KEY
+        model="gemini-pro", temperature=0.1, google_api_key=settings.GOOGLE_API_KEY
     )
     # model = genai.GenerativeModel("gemini-pro", generation_config=GenerationConfig(temperature=0.1))
     prompt = PromptTemplate(
@@ -102,7 +102,7 @@ def get_conversational_chain():
 
 def extract_info(query, category):
     embeddings = GoogleGenerativeAIEmbeddings(
-        model="models/embedding-001", google_api_key=G_API_KEY
+        model="models/embedding-001", google_api_key=settings.GOOGLE_API_KEY
     )
     new_db = FAISS.load_local(f"ai/vectorstore/{category}", embeddings)
     docs = new_db.similarity_search(query)
@@ -198,8 +198,8 @@ def get_advice(uq):
 que = """
 What are my rights if my landlord wants to demolish the building I'm living in?
 """
-answer = get_advice(que)
-print(answer)
-print(type(answer))
+# answer = get_advice(que)
+# print(answer)
+# print(type(answer))
 # cat = gateway(que)
 # print(cat)
