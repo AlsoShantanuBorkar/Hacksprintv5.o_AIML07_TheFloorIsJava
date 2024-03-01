@@ -44,9 +44,9 @@ class ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.dark,
         scrolledUnderElevation: 0,
-        title: const Text(
-          "Lawyer UP",
-          style: TextStyle(color: white),
+        title: Text(
+          "Lawyer Up",
+          style: ts27.white,
         ),
       ),
       body: SizedBox(
@@ -204,6 +204,16 @@ class ChatScreenState extends State<ChatScreen> {
                                   isImageUploading = true;
                                 });
                                 try {
+                                  _messages.add(
+                                    ChatBubble(
+                                      message: "Image",
+                                      isMe: false,
+                                      isMarkdown: true,
+                                      isRagPrompt: false,
+                                      image: file,
+                                      isImage: true,
+                                    ),
+                                  );
                                   uploadImage(file).then((value) {
                                     if (value.data["message"] != "success") {
                                       _messages.add(
@@ -404,6 +414,9 @@ class ChatScreenState extends State<ChatScreen> {
           isLoading = false;
           setState(() {});
         }
+        scrollController.animateTo(scrollController.position.maxScrollExtent,
+            curve: Curves.easeInOutCubic,
+            duration: const Duration(milliseconds: 500));
       });
     }
   }

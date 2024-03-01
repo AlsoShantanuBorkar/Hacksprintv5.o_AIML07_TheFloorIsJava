@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:hacksprint_flutter/core/utils/flutter_tts.dart';
 import 'package:hacksprint_flutter/presentation/common/text/body_text.dart';
 import 'package:hacksprint_flutter/presentation/common/theme/color.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -13,6 +15,8 @@ class ChatBubble extends StatefulWidget {
   final bool isMarkdown;
   final bool isRagPrompt;
   final List<String> links;
+  final bool isImage;
+  final File? image;
   const ChatBubble({
     this.isMarkdown = false,
     this.links = const [],
@@ -20,27 +24,9 @@ class ChatBubble extends StatefulWidget {
     required this.isMe,
     required this.isRagPrompt,
     super.key,
+    this.isImage = false,
+    this.image,
   });
-
-  ChatBubble fromMap(Map<String, dynamic> data) {
-    return ChatBubble(
-      message: data["message"],
-      isMe: data["isMe"],
-      isRagPrompt: data["isRagPrompt"],
-      links: data["links"],
-      isMarkdown: data["isMarkdown"],
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    Map<String, dynamic> data = {};
-    data.addAll({"message": message});
-    data.addAll({"isMe": isMe});
-    data.addAll({"isRagPrompt": isRagPrompt});
-    data.addAll({"links": links});
-    data.addAll({"isMarkdown": isMarkdown});
-    return data;
-  }
 
   @override
   State<ChatBubble> createState() => _ChatBubbleState();
@@ -76,51 +62,98 @@ class _ChatBubbleState extends State<ChatBubble> {
           child: Column(
             mainAxisAlignment:
                 widget.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-            children: [
-              if (!widget.isRagPrompt)
-                BodyText(
-                  isMarkdown: widget.isMarkdown,
-                  inline: true,
-                  text: widget.message,
-                  padding: 0,
-                  textVariant: TextVariant.medium,
-                  textAlign: widget.isMe ? TextAlign.end : TextAlign.start,
-                  color: white,
-                ),
-              if (widget.isRagPrompt && widget.links.isNotEmpty)
-                Column(
-                  children: [
-                    BodyText(
-                      isMarkdown: false,
-                      inline: true,
-                      text: "Here are some links that you might find useful!",
-                      padding: 0,
-                      textVariant: TextVariant.medium,
-                      textAlign: widget.isMe ? TextAlign.end : TextAlign.start,
-                      color: white,
-                    ),
-                    ListView.builder(
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: widget.links.length,
-                        shrinkWrap: true,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: GestureDetector(
-                              onTap: () {
-                                launchUrl(Uri.parse(widget.links[index]));
-                              },
-                              child: BodyText(
-                                text: widget.links[index],
-                                textVariant: TextVariant.small,
-                                color: AppColors.blue,
+            children: widget.isImage
+                ? [Image.file(widget.image!)]
+                : [
+                    if (!widget.isRagPrompt)
+                      BodyText(
+                        isMarkdown: widget.isMarkdown,
+                        inline: true,
+                        text: widget.message,
+                        padding: 0,
+                        textVariant: TextVariant.medium,
+                        textAlign:
+                            widget.isMe ? TextAlign.end : TextAlign.start,
+                        color: white,
+                      ),
+                    if (widget.isRagPrompt && widget.links.isNotEmpty)
+                      Column(
+                        children: [
+                          BodyText(
+                            isMarkdown: false,
+                            inline: true,
+                            text:
+                                "Here are some links that you might find useful!",
+                            padding: 0,
+                            textVariant: TextVariant.medium,
+                            textAlign:
+                                widget.isMe ? TextAlign.end : TextAlign.start,
+                            color: white,
+                          ),
+                          ListView.builder(
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: widget.links.length,
+                              shrinkWrap: true,
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      launchUrl(Uri.parse(widget.links[index]));
+                                    },
+                                    child: BodyText(
+                                      text: widget.links[index],
+                                      textVariant: TextVariant.small,
+                                      color: AppColors.blue,
+                                    ),
+                                  ),
+                                );
+                              }),
+                          const SizedBox(
+                            height: 10,
+                          ),
+                          if (!widget.isMe)
+                            GestureDetector(
+                              child: GestureDetector(
+                                onTap: () {
+                                  if (isPlaying) {
+                                    stopSpeaking();
+                                    isPlaying = !isPlaying;
+                                  } else {
+                                    speakText(widget.message);
+                                    isPlaying = !isPlaying;
+                                  }
+                                  log(isPlaying.toString());
+                                  setState(() {});
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 8),
+                                  decoration: BoxDecoration(
+                                      color: AppColors.blue,
+                                      borderRadius: BorderRadius.circular(8)),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        "Play Audio",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.mic,
+                                        color: Colors.white,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                          );
-                        })
+                        ],
+                      ),
                   ],
-                ),
-            ],
           ),
         ),
       ],
