@@ -151,7 +151,7 @@ def extract_info(query, category):
     final_output = refiner.generate_content(f"{refining_prompt}\n{query}\nCONTEXT:\n{response_from_rag}")
     return final_output.text
 
-def get_advice(uq):
+def get_advice(uq:str,image:dict!None=None):
     category = gateway(uq)
     print(category)
     extracted_info = extract_info(uq, category)
