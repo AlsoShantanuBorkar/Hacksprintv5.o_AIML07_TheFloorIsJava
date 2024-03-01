@@ -27,6 +27,7 @@ class ChatScreenState extends State<ChatScreen> {
   final List<ChatBubble> _messages = [];
   late final FocusNode focusNode;
   bool isLoading = false;
+  bool isImageUploading = false;
   late final ScrollController scrollController;
   @override
   void initState() {
@@ -93,8 +94,8 @@ class ChatScreenState extends State<ChatScreen> {
 
                                 // generate a random index based on the list length
                                 // and use it to retrieve the element
-                                String element = questions[index]
-                                    [_random.nextInt(questions[index].length)];
+                                String element = questions[index];
+
                                 return Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: GestureDetector(
@@ -199,7 +200,53 @@ class ChatScreenState extends State<ChatScreen> {
                               );
                               if (result != null) {
                                 File file = File(result.files.first.path!);
-                                await uploadImage(file);
+                                setState(() {
+                                  isImageUploading = true;
+                                });
+                                try {
+                                  uploadImage(file).then((value) {
+                                    if (value.data["message"] != "success") {
+                                      _messages.add(
+                                        const ChatBubble(
+                                          message:
+                                              "An error occured please try again",
+                                          isMe: false,
+                                          isMarkdown: true,
+                                          isRagPrompt: false,
+                                        ),
+                                      );
+
+                                      isImageUploading = false;
+                                      setState(() {});
+                                    } else {
+                                      _messages.add(
+                                        const ChatBubble(
+                                          message:
+                                              "Image uploaded successfully!",
+                                          isMe: false,
+                                          isMarkdown: true,
+                                          isRagPrompt: false,
+                                        ),
+                                      );
+
+                                      isImageUploading = false;
+                                      setState(() {});
+                                    }
+                                  });
+                                } catch (e) {
+                                  _messages.add(
+                                    const ChatBubble(
+                                      message:
+                                          "An error occured please try again",
+                                      isMe: false,
+                                      isMarkdown: true,
+                                      isRagPrompt: false,
+                                    ),
+                                  );
+
+                                  isImageUploading = false;
+                                  setState(() {});
+                                }
                               }
                             },
                             icon: Icon(
@@ -229,7 +276,7 @@ class ChatScreenState extends State<ChatScreen> {
                 ),
               ),
             ),
-            if (isLoading)
+            if (isLoading || isImageUploading)
               Container(
                 height: MediaQuery.of(context).size.height,
                 width: MediaQuery.of(context).size.width,
@@ -239,9 +286,11 @@ class ChatScreenState extends State<ChatScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const AppTitle(
+                      AppTitle(
                         textAlign: TextAlign.center,
-                        text: "Generating Response ...",
+                        text: isImageUploading
+                            ? "Uploading Image"
+                            : "Generating Response ...",
                         textVariant: TextVariant.medium,
                         weightVariant: WeightVariant.normal,
                         color: white,
@@ -259,14 +308,14 @@ class ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Future uploadImage(File file) async {
+  Future<Response> uploadImage(File file) async {
     String fileName = file.path.split('/').last;
     FormData formData = FormData.fromMap({
       "file": await MultipartFile.fromFile(file.path, filename: fileName),
     });
-    var response =
+    Response response =
         await http.api.post("http://localhost:8000/upload", data: formData);
-    developer.log(response.data.toString());
+    return response;
   }
 
   void _sendMessage(TextEditingController _textEditingController) async {
@@ -392,9 +441,9 @@ List<String> laboutLaw = [
   "Can my employer force me to work without scheduled breaks?",
 ];
 
-List<List<String>> questions = [
-  criminalQuestions,
-  propertyQuestions,
-  familyQuestions,
-  laboutLaw,
+List<String> questions = [
+  "Can I file a complaint against someone who is threatening me over the phone?",
+  "How can I challenge a property auction that I believe was conducted unfairly?",
+  "What's the process for filing for divorce if both parties agree?",
+  "Can I challenge a demotion that I feel was unjustified?",
 ];
