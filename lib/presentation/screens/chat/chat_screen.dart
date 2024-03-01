@@ -309,7 +309,7 @@ class ChatScreenState extends State<ChatScreen> {
 
           if (value.data["type"] != "ERROR_OUTPUT") {
             if (value.data["type"] == "RAG_PROMPT") {
-              List values = value.data["output"];
+              List values = value.data["message"];
               values.forEach(
                 (element) {
                   list.add(element.toString());
@@ -320,7 +320,7 @@ class ChatScreenState extends State<ChatScreen> {
               ChatBubble(
                   message: value.data["type"] == "RAG_PROMPT"
                       ? ""
-                      : value.data["output"],
+                      : value.data["message"],
                   isMe: false,
                   isRagPrompt: value.data["type"] == "RAG_PROMPT",
                   links: list),
