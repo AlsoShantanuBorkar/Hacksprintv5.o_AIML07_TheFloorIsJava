@@ -9,9 +9,11 @@ from google.generativeai.types import GenerationConfig
 from langchain_community.vectorstores import FAISS
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
+
 # from ..core.config import settings
 
 genai.configure(api_key=G_API_KEY)
+
 
 def get_text_from_pdf(docs):
     text = ""
@@ -22,8 +24,7 @@ def get_text_from_pdf(docs):
 
 
 def get_chunks_from_text(text):
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=10000, chunk_overlap=1000)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
     chunks = text_splitter.split_text(text)
     return chunks
 
@@ -33,11 +34,13 @@ def get_vector_store(chunks, where_to):
     vector_store = FAISS.from_texts(chunks, embedding=embeddings)
     vector_store.save_local(where_to)
 
+
 def vectorize(path, where_to):
     raw_text = get_text_from_pdf(path)
     text_chunks = get_chunks_from_text(raw_text)
     get_vector_store(text_chunks, where_to)
     print(f"{path}'s Vector Store Created!")
+
 
 # vectorize("cpact.pdf", "vectorstore/cpact_index")
 
@@ -65,10 +68,12 @@ Nothing else should be returned apart from the categories, no matter what.
 USER_QUERY :
 """
 
+
 def gateway(uq):
     categorizer = genai.GenerativeModel("gemini-pro")
     category = categorizer.generate_content(f"{gateway_prompt}\n{uq}").text
     return category
+
 
 def get_conversational_chain():
     prompt_template = """
@@ -83,23 +88,28 @@ def get_conversational_chain():
 
     Answer:
     """
-    model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.1, google_api_key=G_API_KEY)
+    model = ChatGoogleGenerativeAI(
+        model="gemini-pro", temperature=0.1, google_api_key=G_API_KEY
+    )
     # model = genai.GenerativeModel("gemini-pro", generation_config=GenerationConfig(temperature=0.1))
-    prompt = PromptTemplate(template=prompt_template,
-                            input_variables=["context", "question"])
+    prompt = PromptTemplate(
+        template=prompt_template, input_variables=["context", "question"]
+    )
     # model = genai.GenerativeModel("gemini-pro")
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
     return chain
 
+
 def extract_info(query, category):
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=G_API_KEY)
+    embeddings = GoogleGenerativeAIEmbeddings(
+        model="models/embedding-001", google_api_key=G_API_KEY
+    )
     new_db = FAISS.load_local(f"ai/vectorstore/{category}", embeddings)
     docs = new_db.similarity_search(query)
     chain = get_conversational_chain()
     try:
         response = chain(
-            {"input_documents":docs, "question":query},
-            return_only_outputs=True
+            {"input_documents": docs, "question": query}, return_only_outputs=True
         )
     except Exception as e:
         faux_rag_prompt = """
@@ -116,10 +126,14 @@ def extract_info(query, category):
     
         Here is the user's query :
         """
-        rag_model = genai.GenerativeModel("gemini-pro", generation_config=GenerationConfig(temperature=0.1))
-        ragres = rag_model.generate_content(f"{faux_rag_prompt}\n{query}\nHere's the Domain:\n{category}").text
+        rag_model = genai.GenerativeModel(
+            "gemini-pro", generation_config=GenerationConfig(temperature=0.1)
+        )
+        ragres = rag_model.generate_content(
+            f"{faux_rag_prompt}\n{query}\nHere's the Domain:\n{category}"
+        ).text
 
-        response = {"output_text":ragres}
+        response = {"output_text": ragres}
     response_from_rag = response["output_text"]
     print(response_from_rag)
     # return response_from_rag
@@ -148,10 +162,13 @@ def extract_info(query, category):
 
     USER_QUERY : 
     """
-    final_output = refiner.generate_content(f"{refining_prompt}\n{query}\nCONTEXT:\n{response_from_rag}")
+    final_output = refiner.generate_content(
+        f"{refining_prompt}\n{query}\nCONTEXT:\n{response_from_rag}"
+    )
     return final_output.text
 
-def get_advice(uq:str,image:dict!None=None):
+
+def get_advice(uq):
     category = gateway(uq)
     print(category)
     extracted_info = extract_info(uq, category)
@@ -171,9 +188,12 @@ def get_advice(uq:str,image:dict!None=None):
         Here's the flawed JSON string :
         """
         fix_model = genai.GenerativeModel("gemini-pro")
-        rex = fix_model.generate_content(f"{fixer_prompt}\n{extracted_info}\nHere is the error:\n{e}").text
+        rex = fix_model.generate_content(
+            f"{fixer_prompt}\n{extracted_info}\nHere is the error:\n{e}"
+        ).text
         json_rex = json.loads(rex)
         return json_rex
+
 
 que = """
 What are my rights if my landlord wants to demolish the building I'm living in?
