@@ -9,38 +9,9 @@ from google.generativeai.types import GenerationConfig
 from langchain_community.vectorstores import FAISS
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
-import pyttsx3
 from core.config import settings
 
-genai.configure(api_key=settings.GOOGLE_API_KEY)
-
-
-
-def get_tts(text, gender='female'):
-    # ONLY SUPPORTS ENGLISH LANGUAGE
-    engine = pyttsx3.init()
-    voices = engine.getProperty('voices')
-
-    # Select voice based on gender
-    if gender.lower() == 'male':
-        # Select male voice
-        engine.setProperty('voice', voices[0].id)  
-    elif gender.lower() == 'female':
-        # Select female voice
-        engine.setProperty('voice', voices[1].id)  
-    
-    # Set properties
-    # rate = engine.getProperty('rate')
-    # print(rate)
-    engine.setProperty('rate', 180)  
-    engine.setProperty('volume', 1.0)   
-    
-    # Convert text to speech
-    # engine.say("Hello my friend!")
-    engine.save_to_file(text, 'output_tts.mp3')
-    engine.runAndWait()
-
-
+genai.configure(api_key=settings.GEMINI_API_KEY)
 
 def get_text_from_pdf(docs):
     text = ""
@@ -51,7 +22,8 @@ def get_text_from_pdf(docs):
 
 
 def get_chunks_from_text(text):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=10000, chunk_overlap=1000)
     chunks = text_splitter.split_text(text)
     return chunks
 
@@ -61,13 +33,11 @@ def get_vector_store(chunks, where_to):
     vector_store = FAISS.from_texts(chunks, embedding=embeddings)
     vector_store.save_local(where_to)
 
-
 def vectorize(path, where_to):
     raw_text = get_text_from_pdf(path)
     text_chunks = get_chunks_from_text(raw_text)
     get_vector_store(text_chunks, where_to)
     print(f"{path}'s Vector Store Created!")
-
 
 # vectorize("cpact.pdf", "vectorstore/cpact_index")
 
@@ -95,12 +65,10 @@ Nothing else should be returned apart from the categories, no matter what.
 USER_QUERY :
 """
 
-
 def gateway(uq):
     categorizer = genai.GenerativeModel("gemini-pro")
     category = categorizer.generate_content(f"{gateway_prompt}\n{uq}").text
     return category
-
 
 def get_conversational_chain():
     prompt_template = """
@@ -113,30 +81,27 @@ def get_conversational_chain():
     Corpus:\n{context}\n
     Question: \n{question}\n
 
+    If the Corpus doesn't have sufficient context relevant to the user's query, you must refer to your own knowledge base in order to come up with the three components as mentioned above. However, make sure that they are precise. You must not provide fake information. Most importantly, you MUST stick to Indian laws, and not international laws.
+
     Answer:
     """
-    model = ChatGoogleGenerativeAI(
-        model="gemini-pro", temperature=0.1, google_api_key=settings.GOOGLE_API_KEY
-    )
+    model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.1, google_api_key=settings.GEMINI_API_KEY)
     # model = genai.GenerativeModel("gemini-pro", generation_config=GenerationConfig(temperature=0.1))
-    prompt = PromptTemplate(
-        template=prompt_template, input_variables=["context", "question"]
-    )
+    prompt = PromptTemplate(template=prompt_template,
+                            input_variables=["context", "question"])
     # model = genai.GenerativeModel("gemini-pro")
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
     return chain
 
-
 def extract_info(query, category):
-    embeddings = GoogleGenerativeAIEmbeddings(
-        model="models/embedding-001", google_api_key=settings.GOOGLE_API_KEY
-    )
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=settings.GEMINI_API_KEY)
     new_db = FAISS.load_local(f"ai/vectorstore/{category}", embeddings)
     docs = new_db.similarity_search(query)
     chain = get_conversational_chain()
     try:
         response = chain(
-            {"input_documents": docs, "question": query}, return_only_outputs=True
+            {"input_documents":docs, "question":query},
+            return_only_outputs=True
         )
     except Exception as e:
         faux_rag_prompt = """
@@ -153,14 +118,16 @@ def extract_info(query, category):
     
         Here is the user's query :
         """
-        rag_model = genai.GenerativeModel(
-            "gemini-pro", generation_config=GenerationConfig(temperature=0.1)
-        )
-        ragres = rag_model.generate_content(
-            f"{faux_rag_prompt}\n{query}\nHere's the Domain:\n{category}"
-        ).text
-
-        response = {"output_text": ragres}
+        rag_model = genai.GenerativeModel("gemini-pro", generation_config=GenerationConfig(temperature=0.1))
+        ragres = rag_model.generate_content(f"{faux_rag_prompt}\n{query}\nHere's the Domain:\n{category}")
+        try:
+            ragres_txt = ragres.text
+        except Exception as f:
+            ragres_txt = []
+            for i in range(len(ragres.candidates)):
+                ragres_txt.append(ragres.candidates[i].content.parts)
+            print(f"THIS IS THE PARTS THING:\n{ragres_txt}")
+        response = {"output_text":ragres_txt}
     response_from_rag = response["output_text"]
     print(response_from_rag)
     # return response_from_rag
@@ -168,9 +135,12 @@ def extract_info(query, category):
     refining_prompt = """
     You're the best lawyer in the India. Your number 1 priority is to help, serve and cater to your client's needs in the best way possible. REMEMBER that the client may not be aware of all the legal jargon, and it is your job to be verbose and clarify it all in an easy to understand manner. You will be provided some context from the current laws along with the client's query. Your mission is to return aappropriate response for their query. Remember, be verbose and friendly about it.
 
-    What you will be provided :
+    These are the 4 details that will be provided to you :
 
-    Situation, Exact Law, Description
+    - Situation (you will always be provided this)
+    - Exact Law (you will always be provided this)
+    - Description (you will always be provided this)
+    - Extracted details from the user's image (you will sometimes be provided this, not always)
 
     This is how your thought process must be :
 
@@ -185,15 +155,16 @@ def extract_info(query, category):
 
     THIS IS HOW YOUR RESPONSE MUST BE, ALWAYS, AT ALL TIMES, AT ANY COST :
 
-    {"message":"apply the 4-step thought process here","domain":"","laws":{"section":"","name":"section heading or name", "description":"exact provided Description"}}
+    {"message":"","domain":"","laws":{"section":"","name":"section heading or name", "description":"exact provided Description"}}
+
+    For the "message" key, you have to apply the 4-step thought process as mentioned above. In case there are also image details, you have to accommodate for the same, and generate appropriate value for this key.
+
+    In case none of the 4 details are provided to you, you have to come up with those details based on the query and the domain itself, using your own knowledge base. Remember, however, do not ever return fake information. Most importantly, the information that you come up with should only concern Indian jurisdiction.
 
     USER_QUERY : 
     """
-    final_output = refiner.generate_content(
-        f"{refining_prompt}\n{query}\nCONTEXT:\n{response_from_rag}"
-    )
+    final_output = refiner.generate_content(f"{refining_prompt}\n{query}\nCONTEXT:\n{response_from_rag}\nDOMAIN:\n{category}")
     return final_output.text
-
 
 def get_advice(uq):
     category = gateway(uq)
@@ -215,17 +186,38 @@ def get_advice(uq):
         Here's the flawed JSON string :
         """
         fix_model = genai.GenerativeModel("gemini-pro")
-        rex = fix_model.generate_content(
-            f"{fixer_prompt}\n{extracted_info}\nHere is the error:\n{e}"
-        ).text
+        rex = fix_model.generate_content(f"{fixer_prompt}\n{extracted_info}\nHere is the error:\n{e}").text
         json_rex = json.loads(rex)
         return json_rex
 
+# que = """
+# Is it legal for my employer to fire me while I'm on medical leave?
+# """
 
-que = """
-What are my rights if my landlord wants to demolish the building I'm living in?
-"""
-# answer = get_advice(que)
+# image_que = """
+# What can Ali Quershi do In this situation?
+# These are the details extracted from the image provided by the user
+#  *DETAILS:*
+
+# - *Sender Information:*
+#     - Name: MR. ASIF ALI QURESHI S/O MASHOOQ ALI
+#     - Address: Not Provided
+#     - Contact Details: Not Provided
+#     - Legal Representation: Not Provided
+
+
+# - *Recipient Information:*
+#     - Name: ALI QURESHI
+#     - Address: HOUSE NO. C-9/35, BUS STOP NO. 2, FIRDOS COLONY, GOLIAR, KCS Q-134 G-2, KARACHI.
+#     - Contact Details: Not Provided
+
+
+# - *Statement of Intent or Issue Identification:*
+#     - The purpose of the notice is to inform the recipient that the sender is claiming legal share in a property situated at HOUSE NO. C-9/35, BUS STOP NO. 2, FIRDOS COLONY, GOLIAR, KCS Q-134 G-2, KARACHI.
+#     - The sender states that they have requested their share multiple times but it has not been provided.
+#     - The sender also states that they are willing to distribute the rented amount as per SHARIAH.
+# """
+# answer = get_advice(image_que)
 # print(answer)
 # print(type(answer))
 # cat = gateway(que)
