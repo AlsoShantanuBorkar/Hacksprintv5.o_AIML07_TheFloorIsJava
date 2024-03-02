@@ -9,6 +9,8 @@ from google.generativeai.types import GenerationConfig
 from langchain_community.vectorstores import FAISS
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
+import urllib.request
+import re
 from core.config import settings
 
 genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -93,6 +95,39 @@ def get_conversational_chain():
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
     return chain
 
+def get_yt_links(query, context):
+    searcher_model = genai.GenerativeModel("gemini-pro")
+    searcher_prompt = """
+    Given to you will be a user's query as well as the chatbot's response in the format of a dictionary (referred to as CONTEXT). These are the total data points provided to you:
+
+    1. Query - This is the user's query
+    2. "message" - This is the chatbot's response to the user's query
+    3. "domain" - This is the domain of law 
+    4. "laws" - This contains details about the law(s) relevant to the user's query
+
+    Based on these data points, you have to come up with a search term to find relevant videos on youtube that the user can watch. Your output must ONLY be the search term, and nothing else. This search term MUST NOT exceed a maximum of 6-7 words, it must STRICTLY be one single sentence.
+
+    GOLDEN RULES TO FOLOW :
+
+    1. YOUR OUTPUT MUST BE A SINGLE STRING, NOT ANY OTHER FORMAT.
+    2. Never ever violate the first rule.
+
+    USER QUERY :
+    """
+    urls = []
+    search_terms = searcher_model.generate_content(f"{searcher_prompt}\n{query}\nCONTEXT:\n{context}").text
+    print(search_terms)
+    to_search = search_terms.replace(" ", "+")
+    html = urllib.request.urlopen(f"https://www.youtube.com/results?search_query={to_search}")
+    vid_urls = set(re.findall(r"watch\?v=(\S{11})", html.read().decode()))
+    iterable_vid_urls = list(vid_urls)
+    print(iterable_vid_urls[:5])
+    for i in range(len(iterable_vid_urls[:5])):
+        current = f"https://www.youtube.com/watch?v={iterable_vid_urls[i]}"
+        urls.append(current)
+    links = {"links": urls}
+    return links
+
 def extract_info(query, category):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=settings.GEMINI_API_KEY)
     new_db = FAISS.load_local(f"ai/vectorstore/{category}", embeddings)
@@ -173,7 +208,9 @@ def get_advice(uq):
     # print(extracted_info)
     try:
         json_extracted_info = json.loads(extracted_info)
-        return json_extracted_info
+        # urls = get_yt_links(uq, extracted_info)
+        # json_extracted_info.update(urls)
+        json_output = json_extracted_info
     except Exception as e:
         fixer_prompt = """
         Provided to you will be a string that looks like a JSON dictionary. This dictionary was to be loaded into a Python dictionary using json.dumps() but failed. The error thrown during this process is also given to you. Your main mission is to fix this error by modifying the string's JSON syntax in such a way that json.dumps() won't throw any errors. In other words, fix the incorrect syntax of the JSON within the string, and provide the corrected version as the output.
@@ -187,38 +224,12 @@ def get_advice(uq):
         """
         fix_model = genai.GenerativeModel("gemini-pro")
         rex = fix_model.generate_content(f"{fixer_prompt}\n{extracted_info}\nHere is the error:\n{e}").text
+        print(rex)
         json_rex = json.loads(rex)
-        return json_rex
+        # urls2 = get_yt_links(uq, rex)
+        # json_rex.update(urls2)
+        json_output = json_rex
 
-# que = """
-# Is it legal for my employer to fire me while I'm on medical leave?
-# """
-
-# image_que = """
-# What can Ali Quershi do In this situation?
-# These are the details extracted from the image provided by the user
-#  *DETAILS:*
-
-# - *Sender Information:*
-#     - Name: MR. ASIF ALI QURESHI S/O MASHOOQ ALI
-#     - Address: Not Provided
-#     - Contact Details: Not Provided
-#     - Legal Representation: Not Provided
-
-
-# - *Recipient Information:*
-#     - Name: ALI QURESHI
-#     - Address: HOUSE NO. C-9/35, BUS STOP NO. 2, FIRDOS COLONY, GOLIAR, KCS Q-134 G-2, KARACHI.
-#     - Contact Details: Not Provided
-
-
-# - *Statement of Intent or Issue Identification:*
-#     - The purpose of the notice is to inform the recipient that the sender is claiming legal share in a property situated at HOUSE NO. C-9/35, BUS STOP NO. 2, FIRDOS COLONY, GOLIAR, KCS Q-134 G-2, KARACHI.
-#     - The sender states that they have requested their share multiple times but it has not been provided.
-#     - The sender also states that they are willing to distribute the rented amount as per SHARIAH.
-# """
-# answer = get_advice(image_que)
-# print(answer)
-# print(type(answer))
-# cat = gateway(que)
-# print(cat)
+    urls = get_yt_links(uq, extracted_info)
+    json_output.update(urls)
+    return json_output
