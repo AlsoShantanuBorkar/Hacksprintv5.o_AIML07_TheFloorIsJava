@@ -52,7 +52,6 @@ def upload(file: UploadFile = File(...)):
             "These are the details extracted from the image provided by the user\n"
             + summarize_image(globalImage)
         )
-        print(imageText)
 
     except Exception:
         return {"message": "error"}
