@@ -4,10 +4,15 @@ import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:hacksprint_flutter/core/utils/http_service.dart';
+import 'package:hacksprint_flutter/presentation/common/theme/spacing.dart';
+import 'package:hacksprint_flutter/presentation/common/theme/text_styles.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import 'package:hacksprint_flutter/core/utils/flutter_tts.dart';
+import 'package:hacksprint_flutter/presentation/common/text/app_title.dart';
 import 'package:hacksprint_flutter/presentation/common/text/body_text.dart';
 import 'package:hacksprint_flutter/presentation/common/theme/color.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ChatBubble extends StatefulWidget {
   final String message;
@@ -17,16 +22,18 @@ class ChatBubble extends StatefulWidget {
   final List<String> links;
   final bool isImage;
   final File? image;
-  const ChatBubble({
-    this.isMarkdown = false,
-    this.links = const [],
-    required this.message,
-    required this.isMe,
-    required this.isRagPrompt,
-    super.key,
-    this.isImage = false,
-    this.image,
-  });
+  final LawDetails? laws;
+
+  const ChatBubble(
+      {this.isMarkdown = false,
+      this.links = const [],
+      required this.message,
+      required this.isMe,
+      required this.isRagPrompt,
+      super.key,
+      this.isImage = false,
+      this.image,
+      this.laws});
 
   @override
   State<ChatBubble> createState() => _ChatBubbleState();
@@ -57,14 +64,35 @@ class _ChatBubbleState extends State<ChatBubble> {
           ),
           constraints:
               BoxConstraints(maxWidth: MediaQuery.of(context).size.width / 1.5),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          padding: widget.isImage
+              ? const EdgeInsets.all(4)
+              : const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-          child: Column(
-            mainAxisAlignment:
-                widget.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-            children: widget.isImage
-                ? [Image.file(widget.image!)]
-                : [
+          child: widget.isImage
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.only(
+                          topRight: const Radius.circular(10),
+                          topLeft: const Radius.circular(10),
+                          bottomLeft: widget.isMe
+                              ? const Radius.circular(15)
+                              : const Radius.circular(0),
+                          bottomRight: widget.isMe
+                              ? const Radius.circular(0)
+                              : const Radius.circular(15),
+                        ),
+                        child: Image.file(widget.image!),
+                      )
+                    ])
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     if (!widget.isRagPrompt)
                       BodyText(
                         isMarkdown: widget.isMarkdown,
@@ -76,86 +104,172 @@ class _ChatBubbleState extends State<ChatBubble> {
                             widget.isMe ? TextAlign.end : TextAlign.start,
                         color: white,
                       ),
-                    if (widget.isRagPrompt && widget.links.isNotEmpty)
-                      Column(
-                        children: [
-                          BodyText(
-                            isMarkdown: false,
-                            inline: true,
-                            text:
-                                "Here are some links that you might find useful!",
-                            padding: 0,
-                            textVariant: TextVariant.medium,
-                            textAlign:
-                                widget.isMe ? TextAlign.end : TextAlign.start,
-                            color: white,
-                          ),
-                          ListView.builder(
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: widget.links.length,
-                              shrinkWrap: true,
-                              itemBuilder: (context, index) {
-                                return Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 8),
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      launchUrl(Uri.parse(widget.links[index]));
-                                    },
-                                    child: BodyText(
-                                      text: widget.links[index],
-                                      textVariant: TextVariant.small,
-                                      color: AppColors.blue,
-                                    ),
-                                  ),
-                                );
-                              }),
-                          const SizedBox(
-                            height: 10,
-                          ),
-                          if (!widget.isMe)
-                            GestureDetector(
-                              child: GestureDetector(
-                                onTap: () {
-                                  if (isPlaying) {
-                                    stopSpeaking();
-                                    isPlaying = !isPlaying;
-                                  } else {
-                                    speakText(widget.message);
-                                    isPlaying = !isPlaying;
-                                  }
-                                  log(isPlaying.toString());
-                                  setState(() {});
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 8),
-                                  decoration: BoxDecoration(
-                                      color: AppColors.blue,
-                                      borderRadius: BorderRadius.circular(8)),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        "Play Audio",
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      Icon(
-                                        Icons.mic,
-                                        color: Colors.white,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    if (!widget.isMe &&
+                        widget.message != "Image uploaded successfully!")
+                      ChatBubbleBottomOptions(
+                        message: widget.message,
+                        links: widget.links,
+                        laws: widget.laws,
+                      )
                   ],
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class ChatBubbleBottomOptions extends StatefulWidget {
+  const ChatBubbleBottomOptions(
+      {super.key, required this.message, required this.links, this.laws});
+  final String message;
+  final List<String> links;
+  final LawDetails? laws;
+  @override
+  State<ChatBubbleBottomOptions> createState() =>
+      _ChatBubbleBottomOptionsState();
+}
+
+class _ChatBubbleBottomOptionsState extends State<ChatBubbleBottomOptions> {
+  bool isPlaying = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        GestureDetector(
+          onTap: () {
+            if (isPlaying) {
+              stopSpeaking();
+              isPlaying = !isPlaying;
+            } else {
+              speakText(widget.message);
+              isPlaying = !isPlaying;
+            }
+            log(
+              isPlaying.toString(),
+            );
+            setState(
+              () {},
+            );
+          },
+          child: const Icon(
+            Icons.mic,
+            color: Colors.grey,
+            size: 20,
           ),
         ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (widget.links.isNotEmpty)
+              GestureDetector(
+                onTap: () {
+                  showModalBottomSheet(
+                      context: context,
+                      builder: (context) {
+                        return SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ListView.builder(
+                                    shrinkWrap: true,
+                                    itemCount: widget.links.length,
+                                    itemBuilder: (context, index) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 4),
+                                        child: GestureDetector(
+                                          onTap: () async {
+                                            if (await canLaunchUrl(Uri.parse(
+                                                widget.links[index]))) {
+                                              launchUrl(Uri.parse(
+                                                  widget.links[index]));
+                                            }
+                                          },
+                                          child: Text(
+                                            widget.links[index],
+                                            style: TextStyle(
+                                                color: AppColors.blue),
+                                          ),
+                                        ),
+                                      );
+                                    })
+                              ],
+                            ),
+                          ),
+                        );
+                      });
+                },
+                child: Icon(
+                  Icons.link,
+                  color: AppColors.blue,
+                  size: 20,
+                ),
+              ),
+            if (widget.laws != null)
+              GestureDetector(
+                child: const Icon(
+                  Icons.info_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                onTap: () {
+                  showModalBottomSheet(
+                    backgroundColor: AppColors.dark,
+                    context: context,
+                    builder: (context) {
+                      return SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              verSpacing_8,
+                              Text(
+                                widget.laws!.section
+                                        .toLowerCase()
+                                        .contains("section")
+                                    ? widget.laws!.section
+                                    : "Section ${widget.laws!.section}",
+                                style: ts20.white,
+                              ),
+                              verSpacing_4,
+                              Text(
+                                widget.laws!.name,
+                                style: ts16.white,
+                                textAlign: TextAlign.center,
+                              ),
+                              verSpacing_4,
+                              Text(
+                                widget.laws!.description,
+                                style: ts16.white,
+                                textAlign: TextAlign.justify,
+                              ),
+                              verSpacing_24,
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+          ],
+        )
       ],
     );
   }
@@ -189,11 +303,21 @@ class Chat extends Equatable {
   Map<String, dynamic> toMap() {
     final result = <String, dynamic>{};
 
-    result.addAll({'message': message});
-    result.addAll({'isMe': isMe});
-    result.addAll({'isMarkdown': isMarkdown});
-    result.addAll({'isRagPrompt': isRagPrompt});
-    result.addAll({'links': links});
+    result.addAll(
+      {'message': message},
+    );
+    result.addAll(
+      {'isMe': isMe},
+    );
+    result.addAll(
+      {'isMarkdown': isMarkdown},
+    );
+    result.addAll(
+      {'isRagPrompt': isRagPrompt},
+    );
+    result.addAll(
+      {'links': links},
+    );
 
     return result;
   }
@@ -208,7 +332,52 @@ class Chat extends Equatable {
     );
   }
 
-  String toJson() => json.encode(toMap());
+  String toJson() => json.encode(
+        toMap(),
+      );
 
-  factory Chat.fromJson(String source) => Chat.fromMap(json.decode(source));
+  factory Chat.fromJson(String source) => Chat.fromMap(
+        json.decode(source),
+      );
+}
+
+class LawDetails {
+  final String section;
+  final String name;
+  final String description;
+
+  LawDetails(
+      {required this.section, required this.name, required this.description});
+
+  Map<String, dynamic> toMap() {
+    final result = <String, dynamic>{};
+
+    result.addAll(
+      {'section': section},
+    );
+    result.addAll(
+      {'name': name},
+    );
+    result.addAll(
+      {'description': description},
+    );
+
+    return result;
+  }
+
+  factory LawDetails.fromMap(Map<String, dynamic> map) {
+    return LawDetails(
+      section: map['section'] ?? '',
+      name: map['name'] ?? '',
+      description: map['description'] ?? '',
+    );
+  }
+
+  String toJson() => json.encode(
+        toMap(),
+      );
+
+  factory LawDetails.fromJson(String source) => LawDetails.fromMap(
+        json.decode(source),
+      );
 }

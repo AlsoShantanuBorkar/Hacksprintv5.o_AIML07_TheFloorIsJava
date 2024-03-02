@@ -34,6 +34,7 @@ class ChatScreenState extends State<ChatScreen> {
     scrollController = ScrollController();
     _textEditingController = TextEditingController();
     focusNode = FocusNode();
+    http.api.get("http://localhost:8000/reset_server");
     super.initState();
   }
 
@@ -90,8 +91,6 @@ class ChatScreenState extends State<ChatScreen> {
                               shrinkWrap: true,
                               itemCount: 4,
                               itemBuilder: (context, index) {
-                                final _random = Random();
-
                                 // generate a random index based on the list length
                                 // and use it to retrieve the element
                                 String element = questions[index];
@@ -142,142 +141,172 @@ class ChatScreenState extends State<ChatScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   width: MediaQuery.of(context).size.width,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width * .8,
-                        child: TextField(
-                          onTapOutside: (event) {
-                            focusNode.unfocus();
-                          },
-                          style: const TextStyle(color: white),
-                          controller: _textEditingController,
-                          cursorColor: white,
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Colors.grey.shade900,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: white),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: white),
-                            ),
-                            errorBorder: OutlineInputBorder(
-                              borderSide: const BorderSide(color: white),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: white),
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: white),
-                            ),
-                            focusedErrorBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: white),
-                            ),
-                            hintText: "Enter Message",
-                            hintStyle: const TextStyle(color: white),
-                          ),
-                        ),
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.start,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          IconButton(
-                            onPressed: () async {
-                              FilePickerResult? result =
-                                  await FilePicker.platform.pickFiles(
-                                type: FileType.image,
-                                allowMultiple: false,
-                              );
-                              if (result != null) {
-                                File file = File(result.files.first.path!);
-                                setState(() {
-                                  isImageUploading = true;
-                                });
-                                try {
-                                  _messages.add(
-                                    ChatBubble(
-                                      message: "Image",
-                                      isMe: false,
-                                      isMarkdown: true,
-                                      isRagPrompt: false,
-                                      image: file,
-                                      isImage: true,
-                                    ),
-                                  );
-                                  uploadImage(file).then((value) {
-                                    if (value.data["message"] != "success") {
-                                      _messages.add(
-                                        const ChatBubble(
-                                          message:
-                                              "An error occured please try again",
-                                          isMe: false,
-                                          isMarkdown: true,
-                                          isRagPrompt: false,
-                                        ),
-                                      );
-
-                                      isImageUploading = false;
-                                      setState(() {});
-                                    } else {
-                                      _messages.add(
-                                        const ChatBubble(
-                                          message:
-                                              "Image uploaded successfully!",
-                                          isMe: false,
-                                          isMarkdown: true,
-                                          isRagPrompt: false,
-                                        ),
-                                      );
-
-                                      isImageUploading = false;
-                                      setState(() {});
-                                    }
+                          const Spacer(),
+                          SizedBox(
+                            width: 50,
+                            height: 50,
+                            child: IconButton(
+                              style: IconButton.styleFrom(
+                                  backgroundColor: Colors.grey.shade900,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8))),
+                              onPressed: () async {
+                                FilePickerResult? result =
+                                    await FilePicker.platform.pickFiles(
+                                  type: FileType.image,
+                                  allowMultiple: false,
+                                );
+                                if (result != null) {
+                                  File file = File(result.files.first.path!);
+                                  setState(() {
+                                    isImageUploading = true;
                                   });
-                                } catch (e) {
-                                  _messages.add(
-                                    const ChatBubble(
-                                      message:
-                                          "An error occured please try again",
-                                      isMe: false,
-                                      isMarkdown: true,
-                                      isRagPrompt: false,
-                                    ),
-                                  );
+                                  try {
+                                    _messages.add(
+                                      ChatBubble(
+                                        message: "Image",
+                                        isMe: true,
+                                        isMarkdown: true,
+                                        isRagPrompt: false,
+                                        image: file,
+                                        isImage: true,
+                                      ),
+                                    );
+                                    uploadImage(file).then((value) {
+                                      if (value.data["message"] != "success") {
+                                        _messages.add(
+                                          const ChatBubble(
+                                            message:
+                                                "An error occured please try again",
+                                            isMe: false,
+                                            isMarkdown: true,
+                                            isRagPrompt: false,
+                                          ),
+                                        );
 
-                                  isImageUploading = false;
-                                  setState(() {});
+                                        isImageUploading = false;
+                                        setState(() {});
+                                      } else {
+                                        _messages.add(
+                                          const ChatBubble(
+                                            message:
+                                                "Image uploaded successfully!",
+                                            isMe: false,
+                                            isMarkdown: true,
+                                            isRagPrompt: false,
+                                          ),
+                                        );
+
+                                        isImageUploading = false;
+                                        setState(() {});
+                                      }
+                                    });
+                                  } catch (e) {
+                                    _messages.add(
+                                      const ChatBubble(
+                                        message:
+                                            "An error occured please try again",
+                                        isMe: false,
+                                        isMarkdown: true,
+                                        isRagPrompt: false,
+                                      ),
+                                    );
+
+                                    isImageUploading = false;
+                                    setState(() {});
+                                  }
+                                  scrollController.animateTo(
+                                      scrollController.position.maxScrollExtent,
+                                      curve: Curves.easeInOutCubic,
+                                      duration:
+                                          const Duration(milliseconds: 500));
                                 }
-                              }
-                            },
-                            icon: Icon(
-                              Icons.upload,
-                              color: AppColors.blue,
-                              size: 30,
+                              },
+                              icon: Icon(
+                                Icons.upload,
+                                color: AppColors.blue,
+                                size: 30,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            constraints: const BoxConstraints(
+                                maxHeight: 300.0, minHeight: 60),
+                            width: MediaQuery.of(context).size.width * .8,
+                            child: TextFormField(
+                              maxLines: null,
+                              onTapOutside: (event) {
+                                focusNode.unfocus();
+                              },
+                              style: const TextStyle(color: white),
+                              controller: _textEditingController,
+                              cursorColor: white,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.grey.shade900,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(color: white),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(color: white),
+                                ),
+                                errorBorder: OutlineInputBorder(
+                                  borderSide: const BorderSide(color: white),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(color: white),
+                                ),
+                                disabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(color: white),
+                                ),
+                                focusedErrorBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(color: white),
+                                ),
+                                hintText: "Enter Message",
+                                hintStyle: const TextStyle(color: white),
+                              ),
                             ),
                           ),
                           verSpacing_24,
-                          IconButton(
-                            icon: Transform.rotate(
-                              angle: -30 * math.pi / 180,
-                              child: Icon(
-                                Icons.send,
-                                size: 30,
-                                color: AppColors.blue,
+                          SizedBox(
+                            width: 50,
+                            height: 50,
+                            child: IconButton(
+                              style: IconButton.styleFrom(
+                                  backgroundColor: Colors.grey.shade900,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8))),
+                              icon: Transform.rotate(
+                                angle: -30 * math.pi / 180,
+                                child: Icon(
+                                  Icons.send,
+                                  size: 30,
+                                  color: AppColors.blue,
+                                ),
                               ),
+                              onPressed: () {
+                                _sendMessage(_textEditingController);
+                              },
                             ),
-                            onPressed: () {
-                              _sendMessage(_textEditingController);
-                            },
                           ),
                         ],
                       ),
@@ -364,25 +393,22 @@ class ChatScreenState extends State<ChatScreen> {
           .then((value) {
         try {
           developer.log(value.toString());
-          List<String> list = [];
 
           if (value.data["type"] != "ERROR_OUTPUT") {
-            if (value.data["type"] == "RAG_PROMPT") {
-              List values = value.data["message"];
-              values.forEach(
-                (element) {
-                  list.add(element.toString());
-                },
-              );
-            }
             _messages.add(
               ChatBubble(
-                  message: value.data["type"] == "RAG_PROMPT"
-                      ? ""
-                      : value.data["message"],
-                  isMe: false,
-                  isRagPrompt: value.data["type"] == "RAG_PROMPT",
-                  links: list),
+                message: value.data["type"] == "RAG_PROMPT"
+                    ? ""
+                    : value.data["message"],
+                isMe: false,
+                isRagPrompt: value.data["type"] == "RAG_PROMPT",
+                links: value.data["links"] != null
+                    ? (value.data["links"] as List)
+                        .map((e) => e.toString())
+                        .toList()
+                    : [],
+                laws: LawDetails.fromMap(value.data["laws"]),
+              ),
             );
 
             isLoading = false;
