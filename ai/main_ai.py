@@ -105,7 +105,7 @@ def get_yt_links(query, context):
     3. "domain" - This is the domain of law 
     4. "laws" - This contains details about the law(s) relevant to the user's query
 
-    Based on these data points, you have to come up with a search term to find relevant videos on youtube that the user can watch. Your output must ONLY be the search term, and nothing else. This search term MUST NOT exceed a maximum of 6-7 words, it must STRICTLY be one single sentence.
+    Based on these data points, you have to come up with a search term to find relevant videos on youtube that the user can watch. Based on the "laws" key from the given dictionary, form an appropriate search term to search on youtube to get more information about that particular law. This will help users understand the law better. Your output must ONLY be the search term, and nothing else. This search term MUST NOT exceed a maximum of 6-7 words, it must STRICTLY be one single sentence.
 
     GOLDEN RULES TO FOLOW :
 
@@ -151,6 +151,11 @@ def extract_info(query, category):
         Given the user's query and their domain, your main mission is to understand their issue, and think about what indian laws are relevant to their scenario. Provide them with these three components, as your final output :
 
         Situation of the user problem (summarised), Exact Law (with section name and number), Description (content of that specific law that immediately follows after the section name)
+
+        GOLDEN RULES :
+
+        1. Even if the context given by user's query is not enough, do not return an explicit message saying so. Simply assume a statistically common context for their situation, and come up with the appropriate solution and return the components as requested above.
+        2. Never ever violate Rule 1
     
         Here is the user's query :
         """
