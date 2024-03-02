@@ -111,6 +111,7 @@ def get_yt_links(query, context):
 
     1. YOUR OUTPUT MUST BE A SINGLE STRING, NOT ANY OTHER FORMAT.
     2. Never ever violate the first rule.
+    3. Your output MUST always be in English language, and not any other script.
 
     USER QUERY :
     """
