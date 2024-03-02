@@ -100,7 +100,7 @@ def get_yt_links(query, context):
     searcher_prompt = """
     Given to you will be a user's query as well as the chatbot's response in the format of a dictionary (referred to as CONTEXT). These are the total data points provided to you:
 
-    1. Query - This is the user's query
+    1. Query - This is the user's query, which could be in any language (you have to convert it to English and respond in English too).
     2. "message" - This is the chatbot's response to the user's query
     3. "domain" - This is the domain of law 
     4. "laws" - This contains details about the law(s) relevant to the user's query
