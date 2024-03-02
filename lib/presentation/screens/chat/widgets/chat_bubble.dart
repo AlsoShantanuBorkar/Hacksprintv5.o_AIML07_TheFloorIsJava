@@ -139,137 +139,140 @@ class _ChatBubbleBottomOptionsState extends State<ChatBubbleBottomOptions> {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        GestureDetector(
-          onTap: () {
-            if (isPlaying) {
-              stopSpeaking();
-              isPlaying = !isPlaying;
-            } else {
-              speakText(widget.message);
-              isPlaying = !isPlaying;
-            }
-            log(
-              isPlaying.toString(),
-            );
-            setState(
-              () {},
-            );
-          },
-          child: const Icon(
-            Icons.mic,
-            color: Colors.grey,
-            size: 20,
-          ),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (widget.links.isNotEmpty)
-              GestureDetector(
-                onTap: () {
-                  showModalBottomSheet(
-                      context: context,
-                      builder: (context) {
-                        return SingleChildScrollView(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ListView.builder(
-                                    shrinkWrap: true,
-                                    itemCount: widget.links.length,
-                                    itemBuilder: (context, index) {
-                                      return Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 4),
-                                        child: GestureDetector(
-                                          onTap: () async {
-                                            if (await canLaunchUrl(Uri.parse(
-                                                widget.links[index]))) {
-                                              launchUrl(Uri.parse(
-                                                  widget.links[index]));
-                                            }
-                                          },
-                                          child: Text(
-                                            widget.links[index],
-                                            style: TextStyle(
-                                                color: AppColors.blue),
-                                          ),
-                                        ),
-                                      );
-                                    })
-                              ],
-                            ),
-                          ),
-                        );
-                      });
-                },
-                child: Icon(
-                  Icons.link,
-                  color: AppColors.blue,
-                  size: 20,
-                ),
+        IconButton(
+            style: IconButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
-            if (widget.laws != null)
-              GestureDetector(
-                child: const Icon(
-                  Icons.info_outline,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                onTap: () {
-                  showModalBottomSheet(
-                    backgroundColor: AppColors.dark,
-                    context: context,
-                    builder: (context) {
-                      return SingleChildScrollView(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              verSpacing_8,
-                              Text(
-                                widget.laws!.section
-                                        .toLowerCase()
-                                        .contains("section")
-                                    ? widget.laws!.section
-                                    : "Section ${widget.laws!.section}",
-                                style: ts20.white,
-                              ),
-                              verSpacing_4,
-                              Text(
-                                widget.laws!.name,
-                                style: ts16.white,
-                                textAlign: TextAlign.center,
-                              ),
-                              verSpacing_4,
-                              Text(
-                                widget.laws!.description,
-                                style: ts16.white,
-                                textAlign: TextAlign.justify,
-                              ),
-                              verSpacing_24,
-                            ],
-                          ),
+              backgroundColor: AppColors.blue,
+            ),
+            onPressed: () {
+              if (isPlaying) {
+                stopSpeaking();
+                isPlaying = !isPlaying;
+              } else {
+                speakText(widget.message);
+                isPlaying = !isPlaying;
+              }
+              log(
+                isPlaying.toString(),
+              );
+              setState(
+                () {},
+              );
+            },
+            icon: Icon(isPlaying ? Icons.mic_off : Icons.mic, color: white)),
+        IconButton(
+            style: IconButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              backgroundColor: AppColors.blue,
+            ),
+            onPressed: () {
+              showModalBottomSheet(
+                  backgroundColor: AppColors.dark,
+                  context: context,
+                  builder: (context) {
+                    return SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
                         ),
-                      );
-                    },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            verSpacing_16,
+                            Text(
+                              "Links",
+                              style: ts20.white,
+                            ),
+                            ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: widget.links.length,
+                                itemBuilder: (context, index) {
+                                  return Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 4),
+                                    child: GestureDetector(
+                                      onTap: () async {
+                                        if (await canLaunchUrl(
+                                            Uri.parse(widget.links[index]))) {
+                                          launchUrl(
+                                              Uri.parse(widget.links[index]));
+                                        }
+                                      },
+                                      child: Text(
+                                        widget.links[index],
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            color: AppColors.blue),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                            verSpacing_16
+                          ],
+                        ),
+                      ),
+                    );
+                  });
+            },
+            icon: const Icon(Icons.link, color: white)),
+        IconButton(
+            style: IconButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              backgroundColor: AppColors.blue,
+            ),
+            onPressed: () {
+              showModalBottomSheet(
+                backgroundColor: AppColors.dark,
+                context: context,
+                builder: (context) {
+                  return SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          verSpacing_8,
+                          Text(
+                            widget.laws!.section
+                                    .toLowerCase()
+                                    .contains("section")
+                                ? widget.laws!.section
+                                : "Section ${widget.laws!.section}",
+                            style: ts20.white,
+                          ),
+                          verSpacing_4,
+                          Text(
+                            widget.laws!.name,
+                            style: ts16.white,
+                            textAlign: TextAlign.center,
+                          ),
+                          verSpacing_4,
+                          Text(
+                            widget.laws!.description,
+                            style: ts16.white,
+                            textAlign: TextAlign.justify,
+                          ),
+                          verSpacing_24,
+                        ],
+                      ),
+                    ),
                   );
                 },
-              ),
-          ],
-        )
+              );
+            },
+            icon: const Icon(Icons.info_outline, color: white)),
       ],
     );
   }
