@@ -31,7 +31,7 @@ def get_chunks_from_text(text):
 
 
 def get_vector_store(chunks, where_to):
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=settings.GEMINI_API_KEY)
     vector_store = FAISS.from_texts(chunks, embedding=embeddings)
     vector_store.save_local(where_to)
 
@@ -41,7 +41,7 @@ def vectorize(path, where_to):
     get_vector_store(text_chunks, where_to)
     print(f"{path}'s Vector Store Created!")
 
-# vectorize("cpact.pdf", "vectorstore/cpact_index")
+# vectorize("consumer_law.pdf", "ai/vectorstore/consumer_index")
 
 gateway_prompt = """
 You are an extremely skillful master of understanding any text passage and categorizing it into various categories with absolute precision. Once you are provided with the target categories, you are unstoppable. You can then categorize any given text passage perfectly.
@@ -51,7 +51,8 @@ Here are the target categories :
 1. criminal_index - Any query / text passage that falls under jurisdiction of the criminal law in India.
 2. family_index - Any query / text passage that falls under jurisdiction of the family law in India.
 3. labour_index - Any query / text passage that falls under jurisdiction of the labour law in India.
-4. property_index - Any query / text passage that falls under jurisdiction of the property law in India.and
+4. property_index - Any query / text passage that falls under jurisdiction of the property law in India.
+5. consumer_index - Any query / text passage that falls under jurisdiction of the consumer law in India.
 
 You are provided the user's query as well, and your main mission is to categorize it accordingly, by clearly understanding the query first.
 
@@ -60,7 +61,7 @@ IMPORTANT : Your response MUST be ONLY the category itself, and nothing else.
 
 Your Output should be simply one of these four :
 
-"criminal_index" or "family_index" or "labour_index" or "property_index"
+"criminal_index" or "family_index" or "labour_index" or "property_index" or "consumer_index"
 
 Nothing else should be returned apart from the categories, no matter what.
 
@@ -147,6 +148,7 @@ def extract_info(query, category):
         2. family law
         3. labour law
         4. property law
+        5. consumer law
 
         Given the user's query and their domain, your main mission is to understand their issue, and think about what indian laws are relevant to their scenario. Provide them with these three components, as your final output :
 
@@ -198,7 +200,7 @@ def extract_info(query, category):
 
     {"message":"","domain":"","laws":{"section":"","name":"section heading or name", "description":"exact provided Description"}}
 
-    For the "message" key, you have to apply the 4-step thought process as mentioned above. In case there are also image details, you have to accommodate for the same, and generate appropriate value for this key.
+    For the "message" key, you have to apply the 4-step thought process as mentioned above. In case there are also image details, you have to accommodate for the same, and generate appropriate value for this key. The language of the "message" key value should be the SAME as the user's query.
 
     In case none of the 4 details are provided to you, you have to come up with those details based on the query and the domain itself, using your own knowledge base. Remember, however, do not ever return fake information. Most importantly, the information that you come up with should only concern Indian jurisdiction.
 
