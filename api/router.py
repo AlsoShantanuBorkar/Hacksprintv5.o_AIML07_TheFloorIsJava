@@ -23,6 +23,11 @@ def reset_server():
     imageText = None
 
 
+@router.get("/health_check")
+def health_check():
+    return {"message": "Hello World"}
+
+
 @router.get("/")
 async def home():
     return {"message": imageText == None}
