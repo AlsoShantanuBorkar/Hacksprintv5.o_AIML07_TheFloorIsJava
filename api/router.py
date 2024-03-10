@@ -30,7 +30,7 @@ def health_check():
 
 @router.get("/")
 async def home():
-    return {"message": imageText == None}
+    return {"message": "hello"}
 
 
 @router.post("/generate_response")
