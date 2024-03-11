@@ -1,10 +1,13 @@
 import requests
 import google.generativeai as genai
+from ai.main_ai import get_advice
 from core.config import settings
 
 genai.configure(api_key=settings.GEMINI_API_KEY)
 gwmodel = genai.GenerativeModel("gemini-pro")
-chat_model = genai.GenerativeModel("gemini-pro", generation_config=genai.GenerationConfig(temperature=0.6))
+chat_model = genai.GenerativeModel(
+    "gemini-pro", generation_config=genai.GenerationConfig(temperature=0.6)
+)
 
 gwprompt = """
 You are an expert of gauging the intent of user's queries. Your task is to categorize the user's query into one of the two categories :
@@ -39,67 +42,70 @@ GOLDEN RULES :
 USER_QUERY :
 """
 
+
 def gateway(user_query):
     category = gwmodel.generate_content(f"{gwprompt}\n{user_query}").text
     print(category)
     return category
 
-def get_legal_advice(user_query):
-    url = "https://be-project-jli8.onrender.com/generate_response"
-    headers = {
-        'accept': 'application/json',
-        'Content-Type': 'application/json'
-    }
-    data = {"query": user_query}
-    response = requests.post(url, json=data, headers=headers)
 
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return {
-            'status_code': response.status_code,
-            'content': response.content.decode()
-        }
+# def get_legal_advice(user_query):
+#     url = "https://be-project-jli8.onrender.com/generate_response"
+#     headers = {
+#         'accept': 'application/json',
+#         'Content-Type': 'application/json'
+#     }
+#     data = {"query": user_query}
+#     response = requests.post(url, json=data, headers=headers)
+
+#     if response.status_code == 200:
+#         return response.json()
+#     else:
+#         return {
+#             'status_code': response.status_code,
+#             'content': response.content.decode()
+#         }
+
 
 def ask_the_law(uq, history):
     category = gateway(uq)
     if category == "general_query":
-        general_response = chat_model.generate_content(f"{chatbot_prompt}\n{uq}\nCHAT_HISTORY:\n{history}").text
+        general_response = chat_model.generate_content(
+            f"{chatbot_prompt}\n{uq}\nCHAT_HISTORY:\n{history}"
+        ).text
         response_structure = {
-            "message":general_response,
-            "domain":"",
-            "laws":{
-                "section":"",
-                "name":"",
-                "description":""
-            },
-            "links":[]
+            "message": general_response,
+            "domain": "",
+            "laws": {"section": "", "name": "", "description": ""},
+            "links": [],
         }
         return response_structure
     elif category == "api_query":
-        api_response = get_legal_advice(uq)
+        api_response = get_advice(uq)
         return api_response
 
-latest_question = "I paid for a service that was never provided. How can I get my money back?"
+
+latest_question = (
+    "I paid for a service that was never provided. How can I get my money back?"
+)
 api_response = """
 Certainly, you can get your money back since you have paid for a service that was unfortunately never provided to you. The Consumer Protection Act, 1986, Section 12 provides you with this right. As per this law, you are legally entitled to a refund of the amount paid, along with interest and compensation for any loss or damage suffered. The first step you need to take is to send a legal notice to the service provider, demanding a refund within a specific time frame. If they fail to respond or refund you within that time, you can file a consumer complaint before the District Consumer Disputes Redressal Commission or the State Consumer Disputes Redressal Commission. You can approach these commissions yourself or through an advocate. The commission will then hear both sides of the case and pass an order. If the order is in your favor, the service provider will be legally bound to refund your money along with interest and compensation, as deemed appropriate by the commission.
 """
 new_question = "this is too lengthy, summarize it for me in under 3 sentences."
 history = [
+    {"user": "Hello", "assistant": "Hi there! How can I help you today?"},
     {
-        "user":"Hello",
-        "assistant":"Hi there! How can I help you today?"
+        "user": "Who are you?",
+        "assistant": "I'm LawyerUP, a conversational AI chatbot designed to assist you with legal-related queries. Think of me as your friendly legal companion here to help you navigate the complexities of the law.",
     },
     {
-        "user":"Who are you?",
-        "assistant":"I'm LawyerUP, a conversational AI chatbot designed to assist you with legal-related queries. Think of me as your friendly legal companion here to help you navigate the complexities of the law."
+        "user": latest_question,
+        "assistant": api_response,  # store only the "message" key value in the history, ignore other keys.
     },
-    {
-        "user":latest_question,
-        "assistant":api_response  # store only the "message" key value in the history, ignore other keys.
-    }
 ]
-answer = ask_the_law(new_question, history)  # no matter what the category of the prompt, the structure of the response will always be the same dictionary with the same keys.
+answer = ask_the_law(
+    new_question, history
+)  # no matter what the category of the prompt, the structure of the response will always be the same dictionary with the same keys.
 print(answer)
 
 # Suggestion - We can make "ask_the_law" function return the category of the prompt as well, which can then further be used to make changes in the UI. Basically, if the category of the prompt is "general_query", then the chat bubble need not have the "info" and "yt links" buttons. However, when the category is indeed "api_query", then the chat bubble must have those buttons. Since the JSON structure of the output stays consistent no matter the prompt category, this can make the parsing on frontend easier.
