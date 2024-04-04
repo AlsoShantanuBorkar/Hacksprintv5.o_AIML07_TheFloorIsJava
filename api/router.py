@@ -1,26 +1,11 @@
 from io import BytesIO
 from fastapi import APIRouter, File, UploadFile
-from pydantic import BaseModel
+from ai.conversation import ask_the_law
 from ai.image_extraction import summarize_image
-from ai.main_ai import get_advice
 from PIL import Image
+from models.chat_models import QueryAPI
 
 router = APIRouter()
-
-
-class QueryAPI(BaseModel):
-    query: str
-
-
-globalImage: Image = None
-imageText: str = None
-
-
-@router.get("/reset_server")
-def reset_server():
-    global globalImage, imageText
-    globalImage = None
-    imageText = None
 
 
 @router.get("/health_check")
@@ -35,13 +20,13 @@ async def home():
 
 @router.post("/generate_response")
 async def generate_response(query: QueryAPI):
-    print(query.query)
-    if imageText is None:
-        ans = get_advice(uq=query.query)
+    print(query.history)
+    if query.imageText is None:
+        ans = ask_the_law(uq=query.query, history=query.history)
         return ans
     else:
-        user_query = query.query + "\n" + imageText
-        ans = get_advice(uq=user_query)
+        user_query = query.query + "\n" + query.imageText
+        ans = ask_the_law(uq=user_query, history=query.history)
         return ans
 
 
@@ -49,8 +34,6 @@ async def generate_response(query: QueryAPI):
 def upload(file: UploadFile = File(...)):
     try:
         contents = file.file.read()
-        global globalImage
-        global imageText
 
         globalImage = Image.open(BytesIO(contents))
         imageText = (
@@ -58,9 +41,9 @@ def upload(file: UploadFile = File(...)):
             + summarize_image(globalImage)
         )
 
+        return {"message": imageText}
+
     except Exception:
         return {"message": "error"}
     finally:
         file.file.close()
-
-    return {"message": f"success"}
