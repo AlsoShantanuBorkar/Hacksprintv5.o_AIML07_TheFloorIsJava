@@ -103,9 +103,9 @@ history = [
         "assistant": api_response,  # store only the "message" key value in the history, ignore other keys.
     },
 ]
-answer = ask_the_law(
-    new_question, history
-)  # no matter what the category of the prompt, the structure of the response will always be the same dictionary with the same keys.
-print(answer)
+# answer = ask_the_law(
+#     new_question, history
+# )  # no matter what the category of the prompt, the structure of the response will always be the same dictionary with the same keys.
+# print(answer)
 
 # Suggestion - We can make "ask_the_law" function return the category of the prompt as well, which can then further be used to make changes in the UI. Basically, if the category of the prompt is "general_query", then the chat bubble need not have the "info" and "yt links" buttons. However, when the category is indeed "api_query", then the chat bubble must have those buttons. Since the JSON structure of the output stays consistent no matter the prompt category, this can make the parsing on frontend easier.
