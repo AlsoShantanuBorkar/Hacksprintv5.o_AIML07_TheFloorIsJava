@@ -1,77 +1,29 @@
 import json
 from dotenv import load_dotenv
-from PyPDF2 import PdfReader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+import pinecone
+from langchain_community.vectorstores import Pinecone
+from langchain_community.embeddings import HuggingFaceEmbeddings
 import os
-from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
-from langchain_community.vectorstores import FAISS
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
 import urllib.request
 import re
-from core.config import settings
+import time
+from ..core.config import settings
 
-genai.configure(api_key=settings.GEMINI_API_KEY)
+G_API_KEY = ""
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+INDEX_NAME = "lwyrup"
 
-def get_text_from_pdf(docs):
-    text = ""
-    pdf_reader = PdfReader(docs)
-    for page in pdf_reader.pages:
-        text += page.extract_text()
-    return text
+genai.configure(api_key=G_API_KEY)
+pc = pinecone.Pinecone(api_key=PINECONE_API_KEY)
+index = pc.Index(INDEX_NAME)
+hf_model = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+embeddings = HuggingFaceEmbeddings(model_name = hf_model)
 
-
-def get_chunks_from_text(text):
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=10000, chunk_overlap=1000)
-    chunks = text_splitter.split_text(text)
-    return chunks
-
-
-def get_vector_store(chunks, where_to):
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=settings.GEMINI_API_KEY)
-    vector_store = FAISS.from_texts(chunks, embedding=embeddings)
-    vector_store.save_local(where_to)
-
-def vectorize(path, where_to):
-    raw_text = get_text_from_pdf(path)
-    text_chunks = get_chunks_from_text(raw_text)
-    get_vector_store(text_chunks, where_to)
-    print(f"{path}'s Vector Store Created!")
-
-# vectorize("consumer_law.pdf", "ai/vectorstore/consumer_index")
-
-gateway_prompt = """
-You are an extremely skillful master of understanding any text passage and categorizing it into various categories with absolute precision. Once you are provided with the target categories, you are unstoppable. You can then categorize any given text passage perfectly.
-
-Here are the target categories :
-
-1. criminal_index - Any query / text passage that falls under jurisdiction of the criminal law in India.
-2. family_index - Any query / text passage that falls under jurisdiction of the family law in India.
-3. labour_index - Any query / text passage that falls under jurisdiction of the labour law in India.
-4. property_index - Any query / text passage that falls under jurisdiction of the property law in India.
-5. consumer_index - Any query / text passage that falls under jurisdiction of the consumer law in India.
-
-You are provided the user's query as well, and your main mission is to categorize it accordingly, by clearly understanding the query first.
-
-IMPORTANT : DO NOT categorize the query as anything other than the given 4 target categories.
-IMPORTANT : Your response MUST be ONLY the category itself, and nothing else.
-
-Your Output should be simply one of these four :
-
-"criminal_index" or "family_index" or "labour_index" or "property_index" or "consumer_index"
-
-Nothing else should be returned apart from the categories, no matter what.
-
-USER_QUERY :
-"""
-
-def gateway(uq):
-    categorizer = genai.GenerativeModel("gemini-pro")
-    category = categorizer.generate_content(f"{gateway_prompt}\n{uq}").text
-    return category
 
 def get_conversational_chain():
     prompt_template = """
@@ -88,11 +40,9 @@ def get_conversational_chain():
 
     Answer:
     """
-    model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.1, google_api_key=settings.GEMINI_API_KEY)
-    # model = genai.GenerativeModel("gemini-pro", generation_config=GenerationConfig(temperature=0.1))
+    model = ChatGoogleGenerativeAI(model="gemini-pro", convert_system_message_to_human=True, temperature=0.3, google_api_key=G_API_KEY)
     prompt = PromptTemplate(template=prompt_template,
                             input_variables=["context", "question"])
-    # model = genai.GenerativeModel("gemini-pro")
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
     return chain
 
@@ -130,11 +80,10 @@ def get_yt_links(query, context):
     links = {"links": urls}
     return links
 
-def extract_info(query, category):
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=settings.GEMINI_API_KEY)
-    new_db = FAISS.load_local(f"ai/vectorstore/{category}", embeddings)
-    docs = new_db.similarity_search(query)
+def extract_info(query):
+    vstore = Pinecone.from_existing_index(INDEX_NAME, embeddings)
     chain = get_conversational_chain()
+    docs = vstore.similarity_search(query, 3)
     try:
         response = chain(
             {"input_documents":docs, "question":query},
@@ -142,7 +91,7 @@ def extract_info(query, category):
         )
     except Exception as e:
         faux_rag_prompt = """
-        You have a vast and dense knowledge about Laws of various domains in India, especially these four domains :
+        You have a vast and dense knowledge about Laws of various domains in India, especially these following domains :
 
         1. criminal law
         2. family law
@@ -162,7 +111,7 @@ def extract_info(query, category):
         Here is the user's query :
         """
         rag_model = genai.GenerativeModel("gemini-pro", generation_config=GenerationConfig(temperature=0.1))
-        ragres = rag_model.generate_content(f"{faux_rag_prompt}\n{query}\nHere's the Domain:\n{category}")
+        ragres = rag_model.generate_content(f"{faux_rag_prompt}\n{query}")
         try:
             ragres_txt = ragres.text
         except Exception as f:
@@ -206,18 +155,14 @@ def extract_info(query, category):
 
     USER_QUERY : 
     """
-    final_output = refiner.generate_content(f"{refining_prompt}\n{query}\nCONTEXT:\n{response_from_rag}\nDOMAIN:\n{category}")
+    final_output = refiner.generate_content(f"{refining_prompt}\n{query}\nCONTEXT:\n{response_from_rag}")
     return final_output.text
 
 def get_advice(uq):
-    category = gateway(uq)
-    print(category)
-    extracted_info = extract_info(uq, category)
+    extracted_info = extract_info(uq)
     # print(extracted_info)
     try:
         json_extracted_info = json.loads(extracted_info)
-        # urls = get_yt_links(uq, extracted_info)
-        # json_extracted_info.update(urls)
         json_output = json_extracted_info
     except Exception as e:
         fixer_prompt = """
@@ -234,8 +179,6 @@ def get_advice(uq):
         rex = fix_model.generate_content(f"{fixer_prompt}\n{extracted_info}\nHere is the error:\n{e}").text
         print(rex)
         json_rex = json.loads(rex)
-        # urls2 = get_yt_links(uq, rex)
-        # json_rex.update(urls2)
         json_output = json_rex
 
     urls = get_yt_links(uq, extracted_info)
