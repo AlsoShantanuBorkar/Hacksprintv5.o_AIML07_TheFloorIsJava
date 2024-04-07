@@ -14,12 +14,10 @@ import re
 import time
 from ..core.config import settings
 
-G_API_KEY = ""
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 INDEX_NAME = "lwyrup"
 
-genai.configure(api_key=G_API_KEY)
-pc = pinecone.Pinecone(api_key=PINECONE_API_KEY)
+genai.configure(api_key=settings.GEMINI_API_KEY)
+pc = pinecone.Pinecone(api_key=settings.PINECONE_API_KEY)
 index = pc.Index(INDEX_NAME)
 hf_model = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
 embeddings = HuggingFaceEmbeddings(model_name = hf_model)
@@ -40,7 +38,7 @@ def get_conversational_chain():
 
     Answer:
     """
-    model = ChatGoogleGenerativeAI(model="gemini-pro", convert_system_message_to_human=True, temperature=0.3, google_api_key=G_API_KEY)
+    model = ChatGoogleGenerativeAI(model="gemini-pro", convert_system_message_to_human=True, temperature=0.3, google_api_key=settings.GEMINI_API_KEY)
     prompt = PromptTemplate(template=prompt_template,
                             input_variables=["context", "question"])
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
