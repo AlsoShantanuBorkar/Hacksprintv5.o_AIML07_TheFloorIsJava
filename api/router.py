@@ -20,7 +20,6 @@ async def home():
 
 @router.post("/generate_response")
 async def generate_response(query: QueryAPI):
-    print(query)
     if query.imageText == "":
         ans = ask_the_law(uq=query.query, history=query.history)
         return ans

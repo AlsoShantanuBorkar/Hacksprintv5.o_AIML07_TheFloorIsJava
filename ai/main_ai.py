@@ -2,9 +2,8 @@ import json
 from dotenv import load_dotenv
 import pinecone
 from langchain_community.vectorstores import Pinecone
-from langchain_community.embeddings import HuggingFaceEmbeddings
 import os
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 import google.generativeai as genai
 from google.generativeai.types import GenerationConfig
 from langchain.chains.question_answering import load_qa_chain
@@ -24,7 +23,6 @@ print(settings.PINECONE_API_KEY)
 pc = pinecone.Pinecone(api_key=settings.PINECONE_API_KEY)
 index = pc.Index(INDEX_NAME)
 hf_model = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
-embeddings = HuggingFaceEmbeddings(model_name=hf_model)
 
 
 def get_conversational_chain():
@@ -95,6 +93,10 @@ def get_yt_links(query, context):
 
 
 def extract_info(query):
+
+    embeddings = GoogleGenerativeAIEmbeddings(
+        model="models/embedding-001", google_api_key=settings.GEMINI_API_KEY
+    )
     vstore = Pinecone.from_existing_index(INDEX_NAME, embeddings)
     chain = get_conversational_chain()
     docs = vstore.similarity_search(query, 3)
