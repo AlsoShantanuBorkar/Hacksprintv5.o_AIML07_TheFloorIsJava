@@ -3,7 +3,7 @@ from fastapi import APIRouter, File, UploadFile
 from ai.conversation import ask_the_law
 from ai.image_extraction import summarize_image
 from PIL import Image
-from models.chat_models import QueryAPI
+from core.models.chat_models import QueryAPI
 
 router = APIRouter()
 
@@ -20,12 +20,13 @@ async def home():
 
 @router.post("/generate_response")
 async def generate_response(query: QueryAPI):
-    print(query.history)
-    if query.imageText is None:
+    print(query)
+    if query.imageText == "":
         ans = ask_the_law(uq=query.query, history=query.history)
         return ans
     else:
         user_query = query.query + "\n" + query.imageText
+        print("here")
         ans = ask_the_law(uq=user_query, history=query.history)
         return ans
 

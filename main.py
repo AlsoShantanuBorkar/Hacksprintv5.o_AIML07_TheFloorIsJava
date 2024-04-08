@@ -5,7 +5,7 @@ from api.router import router
 from core.config import settings
 
 
-app = FastAPI(title="Tutor AI")
+app = FastAPI(title="LawyerUp")
 
 app.add_middleware(
     CORSMiddleware,

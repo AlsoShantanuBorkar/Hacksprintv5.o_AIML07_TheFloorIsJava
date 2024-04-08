@@ -49,24 +49,6 @@ def gateway(user_query):
     return category
 
 
-# def get_legal_advice(user_query):
-#     url = "https://be-project-jli8.onrender.com/generate_response"
-#     headers = {
-#         'accept': 'application/json',
-#         'Content-Type': 'application/json'
-#     }
-#     data = {"query": user_query}
-#     response = requests.post(url, json=data, headers=headers)
-
-#     if response.status_code == 200:
-#         return response.json()
-#     else:
-#         return {
-#             'status_code': response.status_code,
-#             'content': response.content.decode()
-#         }
-
-
 def ask_the_law(uq, history):
     category = gateway(uq)
     if category == "general_query":

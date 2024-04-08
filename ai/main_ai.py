@@ -12,15 +12,19 @@ from langchain.prompts import PromptTemplate
 import urllib.request
 import re
 import time
-from ..core.config import settings
+from core.config import settings
+
+import os
 
 INDEX_NAME = "lwyrup"
-
+PINECONE_API_KEY = settings.PINECONE_API_KEY
+os.environ["PINECONE_API_KEY"] = PINECONE_API_KEY
 genai.configure(api_key=settings.GEMINI_API_KEY)
+print(settings.PINECONE_API_KEY)
 pc = pinecone.Pinecone(api_key=settings.PINECONE_API_KEY)
 index = pc.Index(INDEX_NAME)
 hf_model = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
-embeddings = HuggingFaceEmbeddings(model_name = hf_model)
+embeddings = HuggingFaceEmbeddings(model_name=hf_model)
 
 
 def get_conversational_chain():
@@ -38,11 +42,18 @@ def get_conversational_chain():
 
     Answer:
     """
-    model = ChatGoogleGenerativeAI(model="gemini-pro", convert_system_message_to_human=True, temperature=0.3, google_api_key=settings.GEMINI_API_KEY)
-    prompt = PromptTemplate(template=prompt_template,
-                            input_variables=["context", "question"])
+    model = ChatGoogleGenerativeAI(
+        model="gemini-pro",
+        convert_system_message_to_human=True,
+        temperature=0.3,
+        google_api_key=settings.GEMINI_API_KEY,
+    )
+    prompt = PromptTemplate(
+        template=prompt_template, input_variables=["context", "question"]
+    )
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
     return chain
+
 
 def get_yt_links(query, context):
     searcher_model = genai.GenerativeModel("gemini-pro")
@@ -65,10 +76,14 @@ def get_yt_links(query, context):
     USER QUERY :
     """
     urls = []
-    search_terms = searcher_model.generate_content(f"{searcher_prompt}\n{query}\nCONTEXT:\n{context}").text
+    search_terms = searcher_model.generate_content(
+        f"{searcher_prompt}\n{query}\nCONTEXT:\n{context}"
+    ).text
     print(search_terms)
     to_search = search_terms.replace(" ", "+")
-    html = urllib.request.urlopen(f"https://www.youtube.com/results?search_query={to_search}")
+    html = urllib.request.urlopen(
+        f"https://www.youtube.com/results?search_query={to_search}"
+    )
     vid_urls = set(re.findall(r"watch\?v=(\S{11})", html.read().decode()))
     iterable_vid_urls = list(vid_urls)
     print(iterable_vid_urls[:5])
@@ -78,14 +93,14 @@ def get_yt_links(query, context):
     links = {"links": urls}
     return links
 
+
 def extract_info(query):
     vstore = Pinecone.from_existing_index(INDEX_NAME, embeddings)
     chain = get_conversational_chain()
     docs = vstore.similarity_search(query, 3)
     try:
         response = chain(
-            {"input_documents":docs, "question":query},
-            return_only_outputs=True
+            {"input_documents": docs, "question": query}, return_only_outputs=True
         )
     except Exception as e:
         faux_rag_prompt = """
@@ -108,7 +123,9 @@ def extract_info(query):
     
         Here is the user's query :
         """
-        rag_model = genai.GenerativeModel("gemini-pro", generation_config=GenerationConfig(temperature=0.1))
+        rag_model = genai.GenerativeModel(
+            "gemini-pro", generation_config=GenerationConfig(temperature=0.1)
+        )
         ragres = rag_model.generate_content(f"{faux_rag_prompt}\n{query}")
         try:
             ragres_txt = ragres.text
@@ -117,7 +134,7 @@ def extract_info(query):
             for i in range(len(ragres.candidates)):
                 ragres_txt.append(ragres.candidates[i].content.parts)
             print(f"THIS IS THE PARTS THING:\n{ragres_txt}")
-        response = {"output_text":ragres_txt}
+        response = {"output_text": ragres_txt}
     response_from_rag = response["output_text"]
     print(response_from_rag)
     # return response_from_rag
@@ -130,7 +147,7 @@ def extract_info(query):
     - Situation (you will always be provided this)
     - Exact Law (you will always be provided this)
     - Description (you will always be provided this)
-    - Extracted details from the user's image (you will sometimes be provided this, not always)
+    - Extracted details from the user's image (you will sometimes be provided this, not always, even if you are provided with details, you should only reference them when necessary and not for every query)
 
     This is how your thought process must be :
 
@@ -153,8 +170,11 @@ def extract_info(query):
 
     USER_QUERY : 
     """
-    final_output = refiner.generate_content(f"{refining_prompt}\n{query}\nCONTEXT:\n{response_from_rag}")
+    final_output = refiner.generate_content(
+        f"{refining_prompt}\n{query}\nCONTEXT:\n{response_from_rag}"
+    )
     return final_output.text
+
 
 def get_advice(uq):
     extracted_info = extract_info(uq)
@@ -174,7 +194,9 @@ def get_advice(uq):
         Here's the flawed JSON string :
         """
         fix_model = genai.GenerativeModel("gemini-pro")
-        rex = fix_model.generate_content(f"{fixer_prompt}\n{extracted_info}\nHere is the error:\n{e}").text
+        rex = fix_model.generate_content(
+            f"{fixer_prompt}\n{extracted_info}\nHere is the error:\n{e}"
+        ).text
         print(rex)
         json_rex = json.loads(rex)
         json_output = json_rex

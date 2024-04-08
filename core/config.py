@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     JWT_PRIVATE_KEY: str = env_values["JWT_PRIVATE_KEY"]
     GOOGLE_API_KEY: str = env_values["GOOGLE_API_KEY"]
     GEMINI_API_KEY: str = env_values["GEMINI_API_KEY"]
+    PINECONE_API_KEY: str = env_values["PINECONE_API_KEY"]
 
     class Config:
         case_sensitive = True

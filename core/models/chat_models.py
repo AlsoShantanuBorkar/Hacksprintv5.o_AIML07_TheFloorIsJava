@@ -9,5 +9,5 @@ class ChatHistory(BaseModel):
 
 class QueryAPI(BaseModel):
     query: str
-    history: List[ChatHistory] | List
-    imageText: List[str] | None
+    history: List[ChatHistory] | None = None
+    imageText: str | None = None
