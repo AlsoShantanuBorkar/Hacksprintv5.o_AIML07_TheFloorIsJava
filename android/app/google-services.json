@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "3238804088",
+    "project_id": "lawyerup-c2328",
+    "storage_bucket": "lawyerup-c2328.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:3238804088:android:dbed49b86fcab2dd31cb8d",
+        "android_client_info": {
+          "package_name": "com.example.hacksprint_flutter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "3238804088-ikcv9ldq3mups2s6jii82jtgpbf3dqhs.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.hacksprint_flutter",
+            "certificate_hash": "4eea7d7cf113ae1fd05b91a2abd505716820ad10"
+          }
+        },
+        {
+          "client_id": "3238804088-3ppuhovl77p7rgo665ksuc6u94i44vsk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmd6eODUy4p-tAtQKfSc3hm_toHaX1A9w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "3238804088-3ppuhovl77p7rgo665ksuc6u94i44vsk.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "3238804088-3hpifer2b8f8almbo7iq2o8qetshhg2c.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.hacksprintFlutter"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

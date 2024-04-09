@@ -1,0 +1,169 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "2:2719145780885021637",
+      "lastPropertyId": "5:4957151726265517651",
+      "name": "ConversationModel",
+      "properties": [
+        {
+          "id": "1:7889168172028800731",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7848099881535082912",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "3:4197411554491105430",
+          "name": "conversationId",
+          "type": 9
+        },
+        {
+          "id": "4:5234436948258568314",
+          "name": "creationDateTime",
+          "type": 10
+        },
+        {
+          "id": "5:4957151726265517651",
+          "name": "updatedOn",
+          "type": 10
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:2422556700063552013",
+      "lastPropertyId": "14:4367394056815812364",
+      "name": "ChatModel",
+      "properties": [
+        {
+          "id": "1:3654237213325127774",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:5786417220530845290",
+          "name": "messageId",
+          "type": 9
+        },
+        {
+          "id": "3:2924708325743921009",
+          "name": "message",
+          "type": 9
+        },
+        {
+          "id": "4:6737980322061693743",
+          "name": "isMe",
+          "type": 1
+        },
+        {
+          "id": "5:966723169252751815",
+          "name": "isMarkdown",
+          "type": 1
+        },
+        {
+          "id": "6:6928698377949579368",
+          "name": "isRagPrompt",
+          "type": 1
+        },
+        {
+          "id": "7:7525417160286885013",
+          "name": "links",
+          "type": 30
+        },
+        {
+          "id": "8:3648569162449112884",
+          "name": "isImage",
+          "type": 1
+        },
+        {
+          "id": "9:4439103868828274172",
+          "name": "imagePath",
+          "type": 9
+        },
+        {
+          "id": "10:8946078743565357765",
+          "name": "creationDatetime",
+          "type": 10
+        },
+        {
+          "id": "12:774859386423358670",
+          "name": "dbLawDetails",
+          "type": 9
+        },
+        {
+          "id": "13:8562293830382143819",
+          "name": "conversationId",
+          "type": 9
+        },
+        {
+          "id": "14:4367394056815812364",
+          "name": "userEmail",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:7207905970189456835",
+      "lastPropertyId": "4:2352242307122053183",
+      "name": "LawDetails",
+      "properties": [
+        {
+          "id": "1:548156628691488181",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:4709168785408132580",
+          "name": "section",
+          "type": 9
+        },
+        {
+          "id": "3:7121689557228540795",
+          "name": "name",
+          "type": 9
+        },
+        {
+          "id": "4:2352242307122053183",
+          "name": "description",
+          "type": 9
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "4:7207905970189456835",
+  "lastIndexId": "0:0",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [
+    7651475978595634390
+  ],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [
+    5112037003115110833,
+    4628981211246971858,
+    264250899610491312,
+    4401977269549504008,
+    1405494656955405885,
+    4350984861961746031,
+    2512421971782633337,
+    4034882118297069838,
+    296720506190981192,
+    330234904234964434,
+    3126683863710832313
+  ],
+  "retiredRelationUids": [],
+  "version": 1
+}

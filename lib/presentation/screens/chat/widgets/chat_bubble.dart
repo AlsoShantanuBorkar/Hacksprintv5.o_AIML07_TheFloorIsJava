@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:hacksprint_flutter/core/models/chat_model.dart';
 import 'package:hacksprint_flutter/core/utils/http_service.dart';
 import 'package:hacksprint_flutter/presentation/common/theme/spacing.dart';
 import 'package:hacksprint_flutter/presentation/common/theme/text_styles.dart';
@@ -23,7 +24,6 @@ class ChatBubble extends StatefulWidget {
   final bool isImage;
   final File? image;
   final LawDetails? laws;
-
   const ChatBubble(
       {this.isMarkdown = false,
       this.links = const [],
@@ -156,125 +156,151 @@ class _ChatBubbleBottomOptionsState extends State<ChatBubbleBottomOptions> {
                 speakText(widget.message);
                 isPlaying = !isPlaying;
               }
-              log(
-                isPlaying.toString(),
-              );
+
               setState(
                 () {},
               );
             },
             icon: Icon(isPlaying ? Icons.mic_off : Icons.mic, color: white)),
-        IconButton(
-            style: IconButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              backgroundColor: AppColors.blue,
-            ),
-            onPressed: () {
-              showModalBottomSheet(
-                  backgroundColor: AppColors.dark,
-                  context: context,
-                  builder: (context) {
-                    return SingleChildScrollView(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            verSpacing_16,
-                            Text(
-                              "Links",
-                              style: ts20.white,
-                            ),
-                            ListView.builder(
-                                shrinkWrap: true,
-                                itemCount: widget.links.length,
-                                itemBuilder: (context, index) {
-                                  return Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 4),
-                                    child: GestureDetector(
-                                      onTap: () async {
-                                        if (await canLaunchUrl(
-                                            Uri.parse(widget.links[index]))) {
-                                          launchUrl(
-                                              Uri.parse(widget.links[index]));
-                                        }
-                                      },
-                                      child: Text(
-                                        widget.links[index],
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: AppColors.blue),
-                                      ),
-                                    ),
-                                  );
-                                }),
-                            verSpacing_16
-                          ],
-                        ),
-                      ),
-                    );
-                  });
-            },
-            icon: const Icon(Icons.link, color: white)),
-        IconButton(
-            style: IconButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              backgroundColor: AppColors.blue,
-            ),
-            onPressed: () {
-              showModalBottomSheet(
-                backgroundColor: AppColors.dark,
-                context: context,
-                builder: (context) {
-                  return SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          verSpacing_8,
-                          Text(
-                            widget.laws!.section
-                                    .toLowerCase()
-                                    .contains("section")
-                                ? widget.laws!.section
-                                : "Section ${widget.laws!.section}",
-                            style: ts20.white,
-                          ),
-                          verSpacing_4,
-                          Text(
-                            widget.laws!.name,
-                            style: ts16.white,
-                            textAlign: TextAlign.center,
-                          ),
-                          verSpacing_4,
-                          Text(
-                            widget.laws!.description,
-                            style: ts16.white,
-                            textAlign: TextAlign.justify,
-                          ),
-                          verSpacing_24,
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-            icon: const Icon(Icons.info_outline, color: white)),
+        if (widget.links.isNotEmpty) LinksButton(widget: widget),
+        if (widget.laws != null || widget.laws != LawDetails.initial())
+          LawInfoButton(widget: widget),
       ],
     );
+  }
+}
+
+class LinksButton extends StatelessWidget {
+  const LinksButton({
+    super.key,
+    required this.widget,
+  });
+
+  final ChatBubbleBottomOptions widget;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+        style: IconButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          backgroundColor: AppColors.blue,
+        ),
+        onPressed: () {
+          showModalBottomSheet(
+              backgroundColor: AppColors.dark,
+              context: context,
+              builder: (context) {
+                return SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        verSpacing_16,
+                        Text(
+                          "Links",
+                          style: ts20.white,
+                        ),
+                        ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: widget.links.length,
+                            itemBuilder: (context, index) {
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
+                                child: GestureDetector(
+                                  onTap: () async {
+                                    if (await canLaunchUrl(
+                                        Uri.parse(widget.links[index]))) {
+                                      launchUrl(Uri.parse(widget.links[index]));
+                                    }
+                                  },
+                                  child: Text(
+                                    widget.links[index],
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: AppColors.blue,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                        verSpacing_16
+                      ],
+                    ),
+                  ),
+                );
+              });
+        },
+        icon: const Icon(Icons.link, color: white));
+  }
+}
+
+class LawInfoButton extends StatelessWidget {
+  const LawInfoButton({
+    super.key,
+    required this.widget,
+  });
+
+  final ChatBubbleBottomOptions widget;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+        style: IconButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          backgroundColor: AppColors.blue,
+        ),
+        onPressed: () {
+          showModalBottomSheet(
+            backgroundColor: AppColors.dark,
+            context: context,
+            builder: (context) {
+              return SingleChildScrollView(
+                child: Container(
+                  width: MediaQuery.of(context).size.width,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      verSpacing_8,
+                      Text(
+                        widget.laws!.section.toLowerCase().contains("section")
+                            ? widget.laws!.section
+                            : "Section ${widget.laws!.section}",
+                        style: ts20.white,
+                      ),
+                      verSpacing_4,
+                      Text(
+                        widget.laws!.name,
+                        style: ts16.white,
+                        textAlign: TextAlign.center,
+                      ),
+                      verSpacing_4,
+                      Text(
+                        widget.laws!.description,
+                        style: ts16.white,
+                        textAlign: TextAlign.justify,
+                      ),
+                      verSpacing_24,
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+        icon: const Icon(Icons.info_outline, color: white));
   }
 }
 
@@ -340,47 +366,6 @@ class Chat extends Equatable {
       );
 
   factory Chat.fromJson(String source) => Chat.fromMap(
-        json.decode(source),
-      );
-}
-
-class LawDetails {
-  final String section;
-  final String name;
-  final String description;
-
-  LawDetails(
-      {required this.section, required this.name, required this.description});
-
-  Map<String, dynamic> toMap() {
-    final result = <String, dynamic>{};
-
-    result.addAll(
-      {'section': section},
-    );
-    result.addAll(
-      {'name': name},
-    );
-    result.addAll(
-      {'description': description},
-    );
-
-    return result;
-  }
-
-  factory LawDetails.fromMap(Map<String, dynamic> map) {
-    return LawDetails(
-      section: map['section'] ?? '',
-      name: map['name'] ?? '',
-      description: map['description'] ?? '',
-    );
-  }
-
-  String toJson() => json.encode(
-        toMap(),
-      );
-
-  factory LawDetails.fromJson(String source) => LawDetails.fromMap(
         json.decode(source),
       );
 }
