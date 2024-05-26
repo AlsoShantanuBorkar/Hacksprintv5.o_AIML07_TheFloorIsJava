@@ -144,6 +144,7 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
                   ),
                 ),
               ),
+              verSpacing_4,
               BlocBuilder<ChatBloc, ChatState>(
                 builder: (context, state) {
                   return ListView.builder(

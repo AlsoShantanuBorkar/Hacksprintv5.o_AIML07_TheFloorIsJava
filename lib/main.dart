@@ -11,6 +11,7 @@ import 'package:hacksprint_flutter/core/utils/flutter_tts.dart';
 import 'package:hacksprint_flutter/core/utils/http_service.dart';
 import 'package:hacksprint_flutter/core/utils/logger.dart';
 import 'package:hacksprint_flutter/firebase_options.dart';
+import 'package:hacksprint_flutter/presentation/screens/authentication/login_screen.dart';
 import 'package:hacksprint_flutter/presentation/screens/chat/chat_screen.dart';
 import 'package:hacksprint_flutter/presentation/screens/splash/splash_screen.dart';
 
@@ -53,16 +54,15 @@ class MainApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         home: BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {
-            // if (state.isAuthenticated) {
-            //   Navigator.pushReplacement(context,
-            //       MaterialPageRoute(builder: (context) => const ChatScreen()));
-            // } else {
-            //   Navigator.pushReplacement(context,
-            //       MaterialPageRoute(builder: (context) => const LoginScreen()));
-            // }
+            if (state.isAuthenticated) {
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (context) => const ChatScreen()));
+            } else {
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()));
+            }
           },
           builder: (context, state) {
-            return const ChatScreen();
             return const SplashScreen();
           },
         ),
